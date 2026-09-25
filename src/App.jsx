@@ -34,7 +34,7 @@ import StaffLeavePage from './admin/StaffLeavePage';
 import StaffReportPage from './admin/StaffReportPage';
 
 // Apply the saved theme as soon as the app's JS loads, before anything renders.
-const savedTheme = localStorage.getItem('feezo-theme') || 'dark';
+const savedTheme = localStorage.getItem('feezo-theme') || 'light';
 document.body.classList.toggle('dark-theme', savedTheme === 'dark');
 
 // Main swipeable tabs — these stay mounted once visited instead of being
