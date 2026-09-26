@@ -493,9 +493,9 @@ export default function HomeTab() {
   }
 
   return (
-    <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', paddingBottom: 90 }}>
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+    <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', paddingBottom: 70 }}>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <div className="section-title">Dashboard</div>
         </div>
         <div className="my-nav">
@@ -505,7 +505,7 @@ export default function HomeTab() {
           <button className="my-nav-btn" onClick={() => nav('month', 1)} title="Next Month">&gt;</button>
           <button className="my-nav-btn yr" onClick={() => nav('year', 1)} title="Next Year">&gt;&gt;</button>
         </div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
           <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('sport')}>
             {sportFilter === 'ALL' ? 'All Sports' : sportFilter}
           </button>
@@ -535,18 +535,18 @@ export default function HomeTab() {
 
       <div style={{
         background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14,
-        padding: '14px 12px', marginBottom: 14, boxShadow: '0 1px 4px rgba(0,0,0,.06)',
+        padding: '10px 10px', marginBottom: 8, boxShadow: '0 1px 4px rgba(0,0,0,.06)',
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
           fontSize: 11, fontWeight: 800, color: 'var(--gray)', textTransform: 'uppercase',
-          letterSpacing: 0.6, paddingBottom: 9, marginBottom: 10,
+          letterSpacing: 0.6, paddingBottom: 6, marginBottom: 6,
           borderBottom: '1px solid var(--border)',
         }}>
           <span style={{ width: 3, height: 12, borderRadius: 2, background: 'var(--accent2)', display: 'inline-block' }} />
           Overview
         </div>
-        <div className="stats-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+        <div className="stats-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
         {[
           { key: 'total', color: 'stat-blue', icon: '👥', label: 'Total Students', value: currentStrength, caption: '',
             onClick: () => setDrilldown({ title: 'Active Students', icon: '👥', students: activeStudents }) },
@@ -564,21 +564,21 @@ export default function HomeTab() {
             key={tile.key}
             className={`stat-card grad ${tile.color}`}
             style={{
-              cursor: 'pointer', height: 86, boxSizing: 'border-box', padding: '9px 11px',
+              cursor: 'pointer', height: 66, boxSizing: 'border-box', padding: '7px 10px',
               display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden',
             }}
             onClick={tile.onClick}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
-              <span style={{ fontSize: 13.5, lineHeight: 1 }}>{tile.icon}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontSize: 12.5, lineHeight: 1 }}>{tile.icon}</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {tile.label}
               </span>
             </div>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800 }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16.5, fontWeight: 800 }}>
               {tile.value}
             </div>
-            <div style={{ fontSize: 9, opacity: 0.85, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 8.5, opacity: 0.85, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {tile.caption || '\u00A0'}
             </div>
           </div>
@@ -588,27 +588,27 @@ export default function HomeTab() {
 
       <div style={{
         background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14,
-        padding: '14px 12px', marginBottom: 14, boxShadow: '0 1px 4px rgba(0,0,0,.06)',
+        padding: '10px 10px', marginBottom: 8, boxShadow: '0 1px 4px rgba(0,0,0,.06)',
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
           fontSize: 11, fontWeight: 800, color: 'var(--gray)', textTransform: 'uppercase',
-          letterSpacing: 0.6, paddingBottom: 9, marginBottom: 10,
+          letterSpacing: 0.6, paddingBottom: 6, marginBottom: 6,
           borderBottom: '1px solid var(--border)',
         }}>
           <span style={{ width: 3, height: 12, borderRadius: 2, background: 'var(--accent2)', display: 'inline-block' }} />
           Trends
         </div>
-        <div style={{ padding: '12px 12px 8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 800 }}>
+        <div style={{ padding: '4px 4px 2px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 800 }}>
             {chartMode === 'attendance' ? 'Attendance' : 'Strength'} · <span style={{ color: 'var(--gray)', fontWeight: 600 }}>{monthLabel}</span>
           </div>
           <div style={{ display: 'flex', gap: 2, background: 'var(--royal)', borderRadius: 8, padding: 2 }}>
             {['attendance', 'strength'].map(m => (
               <button key={m} onClick={() => setChartMode(m)}
                 style={{
-                  border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 11.5, fontWeight: 700,
+                  border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700,
                   cursor: 'pointer', textTransform: 'capitalize',
                   background: chartMode === m ? 'var(--accent2)' : 'transparent',
                   color: chartMode === m ? '#fff' : 'var(--gray)',
@@ -621,10 +621,10 @@ export default function HomeTab() {
         </div>
 
         {chartData.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'var(--gray)', padding: '30px 0', fontSize: 13 }}>No data yet for this month.</div>
+          <div style={{ textAlign: 'center', color: 'var(--gray)', padding: '20px 0', fontSize: 13 }}>No data yet for this month.</div>
         ) : (
           <>
-            <ResponsiveContainer width="100%" height={190}>
+            <ResponsiveContainer width="100%" height={130}>
               <LineChart data={chartData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis dataKey="day" fontSize={10.5} stroke="var(--gray)" tickLine={false} axisLine={false}
@@ -644,16 +644,16 @@ export default function HomeTab() {
                 )}
               </LineChart>
             </ResponsiveContainer>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 6, paddingBottom: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 4, paddingBottom: 2 }}>
               {chartMode === 'attendance' ? (
                 <>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#4caf8e' }}>●</span> Present</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#e06b6b' }}>●</span> Absent</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#4caf8e' }}>●</span> Present</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#e06b6b' }}>●</span> Absent</span>
                 </>
               ) : (
                 <>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#5b7cc4' }}>●</span> Active</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#e0a04a' }}>●</span> Dropped</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#5b7cc4' }}>●</span> Active</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#e0a04a' }}>●</span> Dropped</span>
                 </>
               )}
             </div>
