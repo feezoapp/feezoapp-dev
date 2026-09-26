@@ -157,10 +157,10 @@ body.dark-theme .app-copyright{background:#0a1830;color:#7f93b5;}
 .stat-card.grad .stat-label{color:rgba(255,255,255,.9);}
 .stat-card.grad .stat-val{color:#fff !important;}
 .stat-card.grad .stat-icon{background:rgba(255,255,255,.22) !important;}
-.stat-blue{background:linear-gradient(135deg,#4d6fa8,#3a5480);}
-.stat-green{background:linear-gradient(135deg,#3f8f76,#2e6d59);}
-.stat-red{background:linear-gradient(135deg,#b6605f,#984c4b);}
-.stat-orange{background:linear-gradient(135deg,#bb8a4d,#96703a);}
+.stat-blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8);}
+.stat-green{background:linear-gradient(135deg,#10b981,#047857);}
+.stat-red{background:linear-gradient(135deg,#ef4444,#b91c1c);}
+.stat-orange{background:linear-gradient(135deg,#f59e0b,#c2740a);}
 .stat-card-info{flex:1;min-width:0;}
 .stat-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:4px;}
 .stat-label{font-size:11px;color:var(--gray);margin-bottom:2px;}
