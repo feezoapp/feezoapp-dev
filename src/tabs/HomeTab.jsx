@@ -509,15 +509,6 @@ export default function HomeTab() {
   // show "₹X/₹Y left ₹Z" for partially paid entries if it chooses to.
 
   const monthLabel = monthLabelShort;
-  const nav = (unit, dir) => {
-    if (unit === 'month') {
-      let m = month + dir, y = year;
-      if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; }
-      setMonth(m); setYear(y);
-    } else {
-      setYear(y => y + dir);
-    }
-  };
 
   const batchesForSport = visibleBatches.filter(b => sportFilter === 'ALL' || b.sport === sportFilter);
 
@@ -539,21 +530,27 @@ export default function HomeTab() {
       <div style={{
         background: '#1A336A',
         borderRadius: '0 0 28px 28px',
-        margin: '-10px -14px 14px',
+        margin: '-14px -14px 14px',
         padding: '14px 14px 16px',
         boxShadow: '0 6px 20px rgba(19,41,82,.35)',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <div className="section-title" style={{ color: '#fff' }}>Dashboard</div>
         </div>
-        <div className="my-nav" style={{ background: '#132952', border: '1px solid rgba(255,255,255,.15)' }}>
-          <button className="my-nav-btn yr" style={{ color: '#fff' }} onClick={() => nav('year', -1)} title="Previous Year">&lt;&lt;</button>
-          <button className="my-nav-btn" style={{ color: '#fff' }} onClick={() => nav('month', -1)} title="Previous Month">&lt;</button>
-          <div className="my-nav-label" style={{ color: '#fff' }}>{monthLabel}</div>
-          <button className="my-nav-btn" style={{ color: '#fff' }} onClick={() => nav('month', 1)} title="Next Month">&gt;</button>
-          <button className="my-nav-btn yr" style={{ color: '#fff' }} onClick={() => nav('year', 1)} title="Next Year">&gt;&gt;</button>
-        </div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            type="month"
+            value={`${year}-${pad2(month + 1)}`}
+            onChange={(e) => {
+              const [y, m] = e.target.value.split('-').map(Number);
+              if (y && m) { setYear(y); setMonth(m - 1); }
+            }}
+            style={{
+              flex: 1.3, fontSize: 12, fontWeight: 700, padding: '7px 8px', borderRadius: 8,
+              background: '#132952', color: '#fff', border: '1px solid rgba(255,255,255,.15)',
+              colorScheme: 'dark', minWidth: 0,
+            }}
+          />
           <button
             className="btn btn-sm"
             style={{
