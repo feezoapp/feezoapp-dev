@@ -51,6 +51,29 @@ function RadioRow({ name, checked, onChange, label }) {
   );
 }
 
+// Small circular percentage ring used on the 4 dashboard tiles. Pure
+// presentation — takes a 0-100 number and draws a progress arc + centered
+// percentage label using the tile's own white text color.
+function PercentRing({ pct, size = 40, strokeWidth = 4 }) {
+  const clamped = Math.max(0, Math.min(100, pct || 0));
+  const r = (size - strokeWidth) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c * (1 - clamped / 100);
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.28)" strokeWidth={strokeWidth} />
+      <circle
+        cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#fff" strokeWidth={strokeWidth}
+        strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+      <text x="50%" y="51%" textAnchor="middle" dominantBaseline="middle" fontSize={size * 0.26} fontWeight={800} fill="#fff">
+        {Math.round(clamped)}%
+      </text>
+    </svg>
+  );
+}
+
 const todayIso = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -105,21 +128,17 @@ function feeStatus(fee) {
 }
 
 // A student owes fees for a given *enrollment* (sport + batch) for a given
-// month only if they were enrolled on/before that month AND have at least
-// one Present attendance record for that specific sport+batch in it —
-// matches isEligible() in FeesTab.jsx exactly (sport/batch scoped, not just
-// "any Present record anywhere").
+// month if they were enrolled on/before that month — no longer requires at
+// least one Present attendance record that month (removed per request).
+// NOTE: this now intentionally differs from isEligible() in FeesTab.jsx,
+// which still has the attendance requirement — so Home's Fee Pending count
+// may no longer match the Fees tab's count.
 function isEligible(student, year, month, attendanceByStudent, sport, batchLabel) {
   if (student.join_date) {
     const checkEnd = toIsoDate(new Date(year, month, 0)); // last day of month
     if (student.join_date > checkEnd) return false;
   }
-  const rows = attendanceByStudent[student.id];
-  return !!(rows && rows.some(r =>
-    r.status === 'P' &&
-    (!sport || norm(r.sport) === norm(sport)) &&
-    (!batchLabel || norm(r.batch) === norm(batchLabel))
-  ));
+  return true;
 }
 
 export default function HomeTab() {
@@ -369,6 +388,14 @@ export default function HomeTab() {
     !f.is_scholarship && (parseInt(f.amount, 10) || 0) > 0 && activeStudentIdSet.has(f.student_id));
   const collected = collectedFees.reduce((s, f) => s + (parseInt(f.amount, 10) || 0), 0);
 
+  // Ring % for Fees Collected: collected ÷ known total due this month. Only
+  // fee rows that actually exist have a due amount — an enrollment with no
+  // fee row yet (never paid, never touched) has no known due amount and is
+  // excluded from this denominator, so this % can understate true "amount
+  // due" for months with lots of completely untouched pending fees.
+  const totalDueKnown = scopedFees.reduce((s, f) => s + (parseInt(f.amount_due, 10) || 0), 0);
+  const collectedPct = totalDueKnown > 0 ? Math.min(100, Math.round((collected / totalDueKnown) * 100)) : (collected > 0 ? 100 : 0);
+
   // --- Fee Pending: dues for the currently browsed month, for ANY eligible
   // enrollment — including banned/dropped students. A student who was active
   // and attended during the browsed month still owed that month's fee even
@@ -437,6 +464,21 @@ export default function HomeTab() {
   }, [attendanceByStudentByMonth, filteredEnrollmentRows, feeMap, monthIso, year, month, monthLabelShort]);
 
   const pending = pendingFeeRows.length;
+
+  // Ring % for Joined: share of currently-active students who joined in the
+  // browsed month.
+  const joinedPct = currentStrength > 0 ? Math.min(100, Math.round((joinedStudents.length / currentStrength) * 100)) : 0;
+
+  // Ring % for Fee Pending: share of eligible enrollments this month that
+  // are still pending (same eligibility rule as pendingFeeRows above, just
+  // counting every eligible row instead of only the unpaid ones).
+  const eligibleCount = useMemo(() => {
+    const attByStudent = attendanceByStudentByMonth[monthIso] || {};
+    return filteredEnrollmentRows.filter(r =>
+      isEligible(r.student, year, month + 1, attByStudent, r.sport, r.batchLabel)
+    ).length;
+  }, [attendanceByStudentByMonth, filteredEnrollmentRows, monthIso, year, month]);
+  const pendingPct = eligibleCount > 0 ? Math.min(100, Math.round((pending / eligibleCount) * 100)) : 0;
 
   const feeStudentList = (feeRows) => {
     const seen = new Map();
@@ -548,23 +590,23 @@ export default function HomeTab() {
         </div>
         <div className="stats-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
         {[
-          { key: 'total', color: 'stat-blue', icon: '👥', label: 'Total Students', value: currentStrength, caption: '',
+          { key: 'total', color: 'stat-blue', icon: '👥', label: 'Total Students', value: currentStrength, caption: '', pct: 100,
             onClick: () => setDrilldown({ title: 'Active Students', icon: '👥', students: activeStudents }) },
-          { key: 'joined', color: 'stat-orange', icon: '🆕', label: 'Joined', value: joinedStudents.length, caption: '',
+          { key: 'joined', color: 'stat-blue', icon: '🆕', label: 'Joined', value: joinedStudents.length, caption: '', pct: joinedPct,
             onClick: () => setDrilldown({ title: 'Joined This Month', icon: '🆕', students: joinedStudents }) },
           // Fees Collected is admin-only — staff should not see money totals.
           ...(isAdmin ? [
-            { key: 'collected', color: 'stat-green', icon: '✅', label: 'Fees Collected', value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments',
+            { key: 'collected', color: 'stat-blue', icon: '✅', label: 'Fees Collected', value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments', pct: collectedPct,
               onClick: () => setDrilldown({ title: 'Fees Collected', icon: '✅', students: feeStudentList(collectedFees) }) },
           ] : []),
-          { key: 'pending', color: 'stat-red', icon: '⚠️', label: 'Fee Pending', value: pending, caption: monthLabel,
+          { key: 'pending', color: 'stat-blue', icon: '⚠️', label: 'Fee Pending', value: pending, caption: monthLabel, pct: pendingPct,
             onClick: () => setDrilldown({ title: `Fee Pending (${monthLabel})`, icon: '⚠️', rows: pendingFeeRows }) },
         ].map(tile => (
           <div
             key={tile.key}
             className={`stat-card grad ${tile.color}`}
             style={{
-              cursor: 'pointer', height: 66, boxSizing: 'border-box', padding: '7px 10px',
+              cursor: 'pointer', height: 92, boxSizing: 'border-box', padding: '8px 10px',
               display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden',
             }}
             onClick={tile.onClick}
@@ -575,11 +617,16 @@ export default function HomeTab() {
                 {tile.label}
               </span>
             </div>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16.5, fontWeight: 800 }}>
-              {tile.value}
-            </div>
-            <div style={{ fontSize: 8.5, opacity: 0.85, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {tile.caption || '\u00A0'}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <PercentRing pct={tile.pct} size={40} strokeWidth={4} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 15.5, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {tile.value}
+                </div>
+                <div style={{ fontSize: 8.5, opacity: 0.85, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {tile.caption || '\u00A0'}
+                </div>
+              </div>
             </div>
           </div>
         ))}
