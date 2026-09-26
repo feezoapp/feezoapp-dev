@@ -672,7 +672,7 @@ export default function HomeTab() {
           <div style={{ textAlign: 'center', color: 'var(--gray)', padding: '20px 0', fontSize: 13 }}>No data yet for this month.</div>
         ) : (
           <>
-            <ResponsiveContainer width="100%" height={130}>
+            <ResponsiveContainer width="100%" height={190}>
               <LineChart data={chartData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis dataKey="day" fontSize={10.5} stroke="var(--gray)" tickLine={false} axisLine={false}
