@@ -1,0 +1,46 @@
+/* FeeZo Home dashboard mobile polish */
+.feezo-home{max-width:1180px;margin:0 auto;}
+
+@media (max-width:600px){
+  .feezo-home{padding:0 2px 18px;}
+  .feezo-home .dash-header{gap:10px;margin-bottom:12px;}
+  .feezo-home .dash-eyebrow{font-size:9px;letter-spacing:.1em;margin-bottom:2px;}
+  .feezo-home .dash-title{font-size:23px;letter-spacing:-.035em;}
+  .feezo-home .dash-subtitle{font-size:10.5px;margin-top:3px;}
+  .feezo-home .dash-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(88px,.42fr) minmax(88px,.42fr);width:100%;gap:6px;}
+  .feezo-home .month-control{min-width:0;width:100%;height:36px;}
+  .feezo-home .month-control button{width:26px;height:28px;font-size:13px;}
+  .feezo-home .month-name{min-width:0;font-size:10.5px;white-space:nowrap;}
+  .feezo-home .modern-control{min-width:0;width:100%;height:36px;min-height:36px;padding:0 8px;font-size:10px;border-radius:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .feezo-home .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:1px;}
+  .feezo-home .kpi{min-height:92px;height:92px;padding:11px;border-radius:15px;box-shadow:0 4px 14px rgba(15,23,42,.045);}
+  .feezo-home .kpi:hover{transform:none;box-shadow:0 4px 14px rgba(15,23,42,.045);}
+  .feezo-home .kpi-icon{width:27px;height:27px;border-radius:8px;font-size:12px;}
+  .feezo-home .kpi-label{font-size:10px;}
+  .feezo-home .kpi-value{font-size:21px;margin-top:8px;}
+  .feezo-home .kpi-helper{font-size:9px;margin-top:4px;}
+  .feezo-home .analytics{display:block;margin-top:9px;}
+  .feezo-home .chart-panel{padding:12px 9px 6px;border-radius:15px;}
+  .feezo-home .panel-head{gap:6px;margin-bottom:5px;align-items:center;}
+  .feezo-home .panel-title{font-size:12.5px;line-height:1.25;min-width:0;}
+  .feezo-home .panel-meta{font-size:9px;}
+  .feezo-home .segmented{flex-shrink:0;padding:2px;border-radius:9px;}
+  .feezo-home .segmented button{padding:5px 8px;font-size:9.5px;border-radius:6px;}
+  .feezo-home .chart-panel .recharts-responsive-container{height:178px!important;}
+  .feezo-home .insight-panel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px;padding:10px;border-radius:15px;}
+  .feezo-home .insight-title{grid-column:1/-1;font-size:11px;margin:0 0 1px;}
+  .feezo-home .insight-row{display:block;text-align:center;padding:8px 4px;border:1px solid var(--border);border-radius:10px;background:var(--bg);}
+  .feezo-home .insight-dot{display:block;margin:0 auto 5px;width:6px;height:6px;}
+  .feezo-home .insight-label{font-size:8.5px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .feezo-home .insight-value{font-size:14px;margin-top:3px;}
+}
+
+@media (min-width:601px) and (max-width:900px){
+  .feezo-home{padding:0 4px 20px;}
+  .feezo-home .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
+/* Keep chart tooltips from becoming oversized on narrow screens. */
+@media (max-width:600px){
+  .feezo-home .recharts-tooltip-wrapper{max-width:145px;}
+}
