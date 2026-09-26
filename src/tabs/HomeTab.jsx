@@ -608,22 +608,22 @@ export default function HomeTab() {
           <div
             key={tile.key}
             style={{
-              cursor: 'pointer', height: 74, boxSizing: 'border-box', padding: '8px 10px',
+              cursor: 'pointer', height: 96, boxSizing: 'border-box', padding: '11px 13px',
               display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden',
-              background: '#132952', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,.15)',
+              background: '#132952', borderRadius: 14, boxShadow: '0 2px 8px rgba(0,0,0,.15)',
             }}
             onClick={tile.onClick}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
-              <span style={{ fontSize: 12.5, lineHeight: 1 }}>{tile.icon}</span>
-              <span style={{ fontSize: 10.5, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+              <span style={{ fontSize: 15, lineHeight: 1 }}>{tile.icon}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {tile.label}
               </span>
             </div>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16.5, fontWeight: 800, color: '#fff' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 800, color: '#fff' }}>
               {tile.value}
             </div>
-            <div style={{ fontSize: 8.5, opacity: 0.75, color: '#fff', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 10, opacity: 0.75, color: '#fff', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {tile.caption || '\u00A0'}
             </div>
           </div>
