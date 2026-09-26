@@ -54,20 +54,20 @@ function RadioRow({ name, checked, onChange, label }) {
 // Small circular percentage ring used on the 4 dashboard tiles. Pure
 // presentation — takes a 0-100 number and draws a progress arc + centered
 // percentage label using the tile's own white text color.
-function PercentRing({ pct, size = 40, strokeWidth = 4 }) {
+function PercentRing({ pct, size = 40, strokeWidth = 4, ringColor = '#fff', trackColor = 'rgba(255,255,255,.28)' }) {
   const clamped = Math.max(0, Math.min(100, pct || 0));
   const r = (size - strokeWidth) / 2;
   const c = 2 * Math.PI * r;
   const offset = c * (1 - clamped / 100);
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.28)" strokeWidth={strokeWidth} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={trackColor} strokeWidth={strokeWidth} />
       <circle
-        cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#fff" strokeWidth={strokeWidth}
+        cx={size / 2} cy={size / 2} r={r} fill="none" stroke={ringColor} strokeWidth={strokeWidth}
         strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
-      <text x="50%" y="51%" textAnchor="middle" dominantBaseline="middle" fontSize={size * 0.26} fontWeight={800} fill="#fff">
+      <text x="50%" y="51%" textAnchor="middle" dominantBaseline="middle" fontSize={size * 0.26} fontWeight={800} fill={ringColor}>
         {Math.round(clamped)}%
       </text>
     </svg>
@@ -536,9 +536,15 @@ export default function HomeTab() {
 
   return (
     <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', paddingBottom: 70 }}>
-      <div style={{ marginBottom: 8 }}>
+      <div style={{
+        background: 'linear-gradient(160deg, #1A336A 0%, #132952 100%)',
+        borderRadius: '0 0 28px 28px',
+        margin: '-10px -14px 14px',
+        padding: '14px 14px 16px',
+        boxShadow: '0 6px 20px rgba(19,41,82,.35)',
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-          <div className="section-title">Dashboard</div>
+          <div className="section-title" style={{ color: '#fff' }}>Dashboard</div>
         </div>
         <div className="my-nav">
           <button className="my-nav-btn yr" onClick={() => nav('year', -1)} title="Previous Year">&lt;&lt;</button>
@@ -548,82 +554,82 @@ export default function HomeTab() {
           <button className="my-nav-btn yr" onClick={() => nav('year', 1)} title="Next Year">&gt;&gt;</button>
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('sport')}>
+          <button
+            className="btn btn-sm"
+            style={{
+              flex: 1, fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              background: 'rgba(255,255,255,.12)', color: '#fff', border: '1px solid rgba(255,255,255,.28)',
+            }}
+            onClick={() => setPopup('sport')}
+          >
             {sportFilter === 'ALL' ? 'All Sports' : sportFilter}
           </button>
-          <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('batch')}>
+          <button
+            className="btn btn-sm"
+            style={{
+              flex: 1, fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              background: 'rgba(255,255,255,.12)', color: '#fff', border: '1px solid rgba(255,255,255,.28)',
+            }}
+            onClick={() => setPopup('batch')}
+          >
             {batchFilter === 'ALL' ? 'All Batches' : batchFilter}
           </button>
         </div>
-      </div>
 
-      {popup === 'sport' && (
-        <FilterPopup title="Select Sport" onClose={() => setPopup(null)}>
-          <RadioRow name="sportsel" checked={sportFilter === 'ALL'} onChange={() => { setSportFilter('ALL'); setBatchFilter('ALL'); setPopup(null); }} label="All Sports" />
-          {visibleSports.map(s => (
-            <RadioRow key={s.id} name="sportsel" checked={sportFilter === s.name} onChange={() => { setSportFilter(s.name); setBatchFilter('ALL'); setPopup(null); }} label={s.name} />
-          ))}
-        </FilterPopup>
-      )}
+        {popup === 'sport' && (
+          <FilterPopup title="Select Sport" onClose={() => setPopup(null)}>
+            <RadioRow name="sportsel" checked={sportFilter === 'ALL'} onChange={() => { setSportFilter('ALL'); setBatchFilter('ALL'); setPopup(null); }} label="All Sports" />
+            {visibleSports.map(s => (
+              <RadioRow key={s.id} name="sportsel" checked={sportFilter === s.name} onChange={() => { setSportFilter(s.name); setBatchFilter('ALL'); setPopup(null); }} label={s.name} />
+            ))}
+          </FilterPopup>
+        )}
 
-      {popup === 'batch' && (
-        <FilterPopup title="Select Batch" onClose={() => setPopup(null)}>
-          <RadioRow name="batchsel" checked={batchFilter === 'ALL'} onChange={() => { setBatchFilter('ALL'); setPopup(null); }} label="All Batches" />
-          {batchesForSport.map(b => (
-            <RadioRow key={b.id} name="batchsel" checked={batchFilter === b.batchLabel} onChange={() => { setBatchFilter(b.batchLabel); setPopup(null); }} label={b.batchLabel} />
-          ))}
-        </FilterPopup>
-      )}
+        {popup === 'batch' && (
+          <FilterPopup title="Select Batch" onClose={() => setPopup(null)}>
+            <RadioRow name="batchsel" checked={batchFilter === 'ALL'} onChange={() => { setBatchFilter('ALL'); setPopup(null); }} label="All Batches" />
+            {batchesForSport.map(b => (
+              <RadioRow key={b.id} name="batchsel" checked={batchFilter === b.batchLabel} onChange={() => { setBatchFilter(b.batchLabel); setPopup(null); }} label={b.batchLabel} />
+            ))}
+          </FilterPopup>
+        )}
 
-      <div style={{
-        background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14,
-        padding: '10px 10px', marginBottom: 8, boxShadow: '0 1px 4px rgba(0,0,0,.06)',
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          fontSize: 11, fontWeight: 800, color: 'var(--gray)', textTransform: 'uppercase',
-          letterSpacing: 0.6, paddingBottom: 6, marginBottom: 6,
-          borderBottom: '1px solid var(--border)',
-        }}>
-          <span style={{ width: 3, height: 12, borderRadius: 2, background: 'var(--accent2)', display: 'inline-block' }} />
-          Overview
-        </div>
-        <div className="stats-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
+        <div className="stats-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 12 }}>
         {[
-          { key: 'total', color: 'stat-blue', icon: '👥', label: 'Total Students', value: currentStrength, caption: '', pct: 100,
+          { key: 'total', icon: '👥', label: 'Total Students', value: currentStrength, caption: '', pct: 100,
             onClick: () => setDrilldown({ title: 'Active Students', icon: '👥', students: activeStudents }) },
-          { key: 'joined', color: 'stat-blue', icon: '🆕', label: 'Joined', value: joinedStudents.length, caption: '', pct: joinedPct,
+          { key: 'joined', icon: '🆕', label: 'Joined', value: joinedStudents.length, caption: '', pct: joinedPct,
             onClick: () => setDrilldown({ title: 'Joined This Month', icon: '🆕', students: joinedStudents }) },
           // Fees Collected is admin-only — staff should not see money totals.
           ...(isAdmin ? [
-            { key: 'collected', color: 'stat-blue', icon: '✅', label: 'Fees Collected', value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments', pct: collectedPct,
+            { key: 'collected', icon: '✅', label: 'Fees Collected', value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments', pct: collectedPct,
               onClick: () => setDrilldown({ title: 'Fees Collected', icon: '✅', students: feeStudentList(collectedFees) }) },
           ] : []),
-          { key: 'pending', color: 'stat-blue', icon: '⚠️', label: 'Fee Pending', value: pending, caption: monthLabel, pct: pendingPct,
+          { key: 'pending', icon: '⚠️', label: 'Fee Pending', value: pending, caption: monthLabel, pct: pendingPct,
             onClick: () => setDrilldown({ title: `Fee Pending (${monthLabel})`, icon: '⚠️', rows: pendingFeeRows }) },
         ].map(tile => (
           <div
             key={tile.key}
-            className={`stat-card grad ${tile.color}`}
             style={{
               cursor: 'pointer', height: 92, boxSizing: 'border-box', padding: '8px 10px',
               display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden',
+              background: '#F3F3F4', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,.15)',
             }}
             onClick={tile.onClick}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
               <span style={{ fontSize: 12.5, lineHeight: 1 }}>{tile.icon}</span>
-              <span style={{ fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: '#1A336A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {tile.label}
               </span>
             </div>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <PercentRing pct={tile.pct} size={40} strokeWidth={4} />
+              <PercentRing pct={tile.pct} size={40} strokeWidth={4} ringColor="#1A336A" trackColor="rgba(26,51,106,.18)" />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 15.5, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 15.5, fontWeight: 800, color: '#132952', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {tile.value}
                 </div>
-                <div style={{ fontSize: 8.5, opacity: 0.85, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 8.5, opacity: 0.7, color: '#132952', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {tile.caption || '\u00A0'}
                 </div>
               </div>
