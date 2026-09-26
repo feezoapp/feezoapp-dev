@@ -69,7 +69,7 @@ input,select,textarea{font-family:var(--font);}
 .topbar-left{display:flex;align-items:center;gap:9px;}
 .logo-img{width:46px;height:46px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;box-shadow:0 2px 8px rgba(91,124,196,.25);}
 .logo-img img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.academy-name{font-size:13px;font-weight:700;color:var(--gold);line-height:1.2;}
+.academy-name{font-size:13px;font-weight:700;color:#fff;line-height:1.2;}
 .academy-sub{font-size:10px;color:var(--gray);}
 .topbar-right{text-align:right;}
 .datetime-time{font-size:15px;font-weight:700;color:var(--gold);}
