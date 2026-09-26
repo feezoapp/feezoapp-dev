@@ -7,7 +7,7 @@
   --red:#e06b6b;--green:#4caf8e;--orange:#e0a05a;
   --card:#ffffff;--card2:#f4f7fb;--border:#d8e0ec;
   --shadow:0 4px 20px rgba(30,50,90,.10);--radius:12px;
-  --font:'Poppins','Segoe UI',system-ui,sans-serif;
+  --font:'Inter','Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
 }
 body.dark-theme{
   --royal:#0a1628;--royal2:#0d2040;--royal3:#122654;
@@ -157,10 +157,10 @@ body.dark-theme .app-copyright{background:#0a1830;color:#7f93b5;}
 .stat-card.grad .stat-label{color:rgba(255,255,255,.9);}
 .stat-card.grad .stat-val{color:#fff !important;}
 .stat-card.grad .stat-icon{background:rgba(255,255,255,.22) !important;}
-.stat-blue{background:linear-gradient(135deg,#6b8fd6,#5470b8);}
-.stat-green{background:linear-gradient(135deg,#5bbf9a,#479b7c);}
-.stat-red{background:linear-gradient(135deg,#e08a8a,#c96f6f);}
-.stat-orange{background:linear-gradient(135deg,#e0b06f,#cf954f);}
+.stat-blue{background:linear-gradient(135deg,#4d6fa8,#3a5480);}
+.stat-green{background:linear-gradient(135deg,#3f8f76,#2e6d59);}
+.stat-red{background:linear-gradient(135deg,#b6605f,#984c4b);}
+.stat-orange{background:linear-gradient(135deg,#bb8a4d,#96703a);}
 .stat-card-info{flex:1;min-width:0;}
 .stat-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:4px;}
 .stat-label{font-size:11px;color:var(--gray);margin-bottom:2px;}
@@ -372,7 +372,7 @@ tr:hover td{background:var(--card2);}
 
 /* Force ₹ symbol to render correctly across all devices */
 .rupee::before { content: '\20B9'; font-family: 'Noto Sans', 'Roboto', 'Arial Unicode MS', sans-serif; }
-body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, sans-serif; }
+body { font-family: 'Inter', 'Segoe UI', 'Noto Sans', Roboto, Arial, sans-serif; }
 
 /* Login error */
 .login-error{display:none;background:#fde8e8;border:1px solid #f5b5b5;color:#b91c1c;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:12px;text-align:left;}
