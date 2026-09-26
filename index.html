@@ -26,32 +26,37 @@
 @media(max-width:600px){
   .feezo-home{padding:0 0 8px!important}
 
-  /* Header: Dashboard only */
-  .feezo-home .dash-header{display:block!important;margin-bottom:13px!important}
+  /* 1. Header: Dashboard only, with comfortable breathing room */
+  .feezo-home .dash-header{display:block!important;margin-bottom:15px!important;padding-top:3px!important}
   .feezo-home .dash-eyebrow,.feezo-home .dash-subtitle{display:none!important}
-  .feezo-home .dash-title{font-size:24px!important;line-height:1.1!important;margin:0 0 13px!important;font-weight:850!important}
+  .feezo-home .dash-title{font-size:25px!important;line-height:1.12!important;margin:0 0 14px!important;font-weight:850!important;letter-spacing:-.04em!important}
 
-  /* Modern month + filter toolbar */
+  /* 2. Modern month + filter toolbar */
   .feezo-home .dash-actions{display:grid!important;grid-template-columns:minmax(0,1.45fr) minmax(0,.78fr) minmax(0,.78fr)!important;gap:7px!important;width:100%!important;align-items:center!important}
   .feezo-home .month-control{display:flex!important;align-items:center!important;justify-content:space-between!important;min-width:0!important;width:100%!important;height:44px!important;padding:4px!important;border-radius:15px!important;background:var(--card)!important;border:1px solid rgba(100,116,139,.17)!important;box-shadow:0 5px 16px rgba(15,23,42,.065)!important;position:relative!important}
-  .feezo-home .month-control:before{content:'▣';display:grid!important;place-items:center!important;flex:0 0 30px!important;width:30px!important;height:32px!important;margin-left:1px!important;border-radius:9px!important;background:rgba(79,115,217,.11)!important;color:#4f73d9!important;font-size:14px!important;font-weight:900!important}
+  .feezo-home .month-control:before{content:'📅';display:grid!important;place-items:center!important;flex:0 0 30px!important;width:30px!important;height:30px!important;margin-left:1px!important;border-radius:9px!important;background:rgba(79,115,217,.11)!important;color:#4f73d9!important;font-size:14px!important;line-height:1!important}
   .feezo-home .month-control button{width:31px!important;height:34px!important;border:0!important;border-radius:10px!important;background:transparent!important;color:#334155!important;font-size:19px!important;font-weight:850!important;flex:0 0 31px!important}
   .feezo-home .month-control button:first-child,.feezo-home .month-control button:last-child{display:none!important}
   .feezo-home .month-control button:nth-child(2),.feezo-home .month-control button:nth-child(4){display:grid!important;place-items:center!important}
   .feezo-home .month-name{min-width:0!important;flex:1!important;text-align:center!important;font-size:11.5px!important;font-weight:850!important;white-space:nowrap!important;letter-spacing:-.01em!important}
   .feezo-home .modern-control{display:flex!important;align-items:center!important;justify-content:center!important;min-width:0!important;width:100%!important;height:44px!important;min-height:44px!important;padding:0 8px!important;border-radius:15px!important;background:var(--card)!important;border:1px solid rgba(100,116,139,.17)!important;box-shadow:0 5px 16px rgba(15,23,42,.055)!important;white-space:nowrap!important;font-size:10.5px!important;font-weight:800!important}
 
-  /* Premium KPI cards */
+  /* 3. Premium KPI cards with subtle color accents */
   .feezo-home .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
-  .feezo-home .kpi{min-height:104px!important;padding:13px!important;border-radius:17px!important;border:1px solid rgba(100,116,139,.15)!important;box-shadow:0 5px 18px rgba(15,23,42,.055)!important}
+  .feezo-home .kpi{min-height:96px!important;padding:12px!important;border-radius:17px!important;border:1px solid rgba(100,116,139,.15)!important;box-shadow:0 5px 16px rgba(15,23,42,.055)!important}
+  .feezo-home .kpi:before{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 4px 4px 0;background:currentColor;opacity:.82}
   .feezo-home .kpi-top{align-items:center!important}
-  .feezo-home .kpi-label{font-size:10.5px!important;font-weight:800!important}
-  .feezo-home .kpi-icon{width:30px!important;height:30px!important;border-radius:10px!important;font-size:12px!important}
-  .feezo-home .kpi-value{margin-top:11px!important;font-size:23px!important;line-height:1!important;font-weight:900!important;letter-spacing:-.04em!important}
-  .feezo-home .kpi-helper{margin-top:6px!important;font-size:9.5px!important;font-weight:550!important}
-  .feezo-home .kpi:after{width:94px!important;height:94px!important;right:-38px!important;bottom:-43px!important}
+  .feezo-home .kpi-label{font-size:10px!important;font-weight:800!important}
+  .feezo-home .kpi-icon{width:29px!important;height:29px!important;border-radius:9px!important;font-size:12px!important;box-shadow:0 3px 8px rgba(15,23,42,.07)!important}
+  .feezo-home .kpi-value{margin-top:8px!important;font-size:22px!important;line-height:1!important;font-weight:900!important;letter-spacing:-.04em!important}
+  .feezo-home .kpi-helper{margin-top:4px!important;font-size:9px!important;font-weight:550!important}
+  .feezo-home .kpi:after{width:86px!important;height:86px!important;right:-35px!important;bottom:-40px!important}
+  .feezo-home .blue .kpi-icon{background:rgba(79,115,217,.12)!important;color:#4f73d9!important}
+  .feezo-home .orange .kpi-icon{background:rgba(217,147,63,.13)!important;color:#d9933f!important}
+  .feezo-home .green .kpi-icon{background:rgba(62,170,130,.13)!important;color:#3eaa82!important}
+  .feezo-home .red .kpi-icon{background:rgba(214,95,107,.13)!important;color:#d65f6b!important}
 
-  /* Analytics card */
+  /* Analytics */
   .feezo-home .analytics{display:block!important;margin-top:11px!important}
   .feezo-home .chart-panel{padding:13px 10px 8px!important;border-radius:17px!important;border:1px solid rgba(100,116,139,.15)!important;box-shadow:0 6px 20px rgba(15,23,42,.05)!important}
   .feezo-home .panel-head{display:flex!important;align-items:center!important;margin-bottom:6px!important;gap:6px!important}
@@ -62,13 +67,14 @@
   .feezo-home .chart-panel .recharts-responsive-container{height:190px!important}
   .feezo-home .chart-panel .recharts-wrapper{max-height:190px!important}
 
-  /* Quick insights */
-  .feezo-home .insight-panel{margin-top:9px!important;padding:13px!important;border-radius:17px!important;border:1px solid rgba(100,116,139,.15)!important;box-shadow:0 6px 20px rgba(15,23,42,.05)!important}
-  .feezo-home .insight-title{font-size:13px!important;font-weight:850!important;margin-bottom:6px!important}
-  .feezo-home .insight-row{padding:9px 0!important}
-  .feezo-home .insight-label{font-size:9.5px!important;font-weight:600!important}
-  .feezo-home .insight-value{font-size:16px!important;font-weight:850!important}
+  /* 4. Quick insights as compact modern cards */
+  .feezo-home .insight-panel{margin-top:9px!important;padding:12px!important;border-radius:17px!important;border:1px solid rgba(100,116,139,.15)!important;box-shadow:0 6px 20px rgba(15,23,42,.05)!important}
+  .feezo-home .insight-title{font-size:13px!important;font-weight:850!important;margin-bottom:7px!important}
+  .feezo-home .insight-row{padding:9px!important;margin:0 0 6px!important;border:1px solid var(--border)!important;border-radius:12px!important;background:var(--bg)!important}
+  .feezo-home .insight-row:last-child{margin-bottom:0!important}
   .feezo-home .insight-dot{width:7px!important;height:7px!important}
+  .feezo-home .insight-label{font-size:9.5px!important;font-weight:600!important}
+  .feezo-home .insight-value{font-size:15px!important;font-weight:850!important}
 
   .page{padding-left:10px!important;padding-right:10px!important}
 }
