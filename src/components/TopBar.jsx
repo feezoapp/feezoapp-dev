@@ -383,7 +383,7 @@ export default function TopBar({ academyName, logoUrl, greeting, onToggleMenu, o
           <div className="academy-name" style={{ whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.25, fontSize: 13, wordBreak: 'break-word' }}>
             {academyName || 'Academy'}
           </div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--gray)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.75)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {greeting}
           </div>
         </div>
@@ -477,7 +477,7 @@ export default function TopBar({ academyName, logoUrl, greeting, onToggleMenu, o
           </button>
         </div>
         <div style={{ textAlign: 'right', lineHeight: 1.2 }}>
-          <div className="datetime-combined" style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>{time}, {date}</div>
+          <div className="datetime-combined" style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', color: '#fff' }}>{time}, {date}</div>
         </div>
       </div>
 
