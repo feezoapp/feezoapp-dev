@@ -9,7 +9,7 @@ function CustomTooltip({ active, payload, label, mode }) {
   if (!active || !payload || !payload.length) return null;
   const key1 = mode === 'attendance' ? 'present' : 'strength';
   const key2 = mode === 'attendance' ? 'absent' : 'dropped';
-  const label1 = mode === 'attendance' ? 'Present' : 'Active';
+  const label1 = mode === 'attendance' ? 'Present' : 'Joined';
   const label2 = mode === 'attendance' ? 'Absent' : 'Dropped';
   const p1 = payload.find(p => p.dataKey === key1);
   const p2 = payload.find(p => p.dataKey === key2);
@@ -153,7 +153,7 @@ export default function HomeTab() {
   const [popup, setPopup] = useState(null); // 'sport' | 'batch' | null
   const [fees, setFees] = useState([]);
   const [allAttendance, setAllAttendance] = useState([]);
-  const [chartMode, setChartMode] = useState('attendance'); // 'attendance' | 'strength'
+  const [chartMode, setChartMode] = useState('strength'); // 'attendance' | 'strength'
   const [drilldown, setDrilldown] = useState(null);
 
   // Date range for the selected month: 1st -> today (if current month) or end of month (past months)
@@ -330,7 +330,7 @@ export default function HomeTab() {
     const m = {}; students.forEach(s => { m[s.id] = s; }); return m;
   }, [students]);
 
-  // Chart series: attendance (present/absent per day) and strength (active/dropped headcount per day).
+  // Chart series: attendance (present/absent per day) and strength (joined/dropped per day).
   // Attendance rows are matched against enrollmentKeySet (student+sport+batch),
   // not just student_id, so a filtered sport only counts that sport's marks.
   const chartData = useMemo(() => dateRange.map(dateStr => {
@@ -339,11 +339,7 @@ export default function HomeTab() {
       a.date === dateStr && enrollmentKeySet.has(keyFor(a.student_id, a.sport, a.batch)));
     const present = dayRows.filter(a => a.status === 'P').length;
     const absent = dayRows.filter(a => a.status === 'A').length;
-    const strength = students.filter(s => {
-      if (s.join_date && s.join_date > dateStr) return false; // only exclude if they join in the future
-      if (s.banned && (!s.banned_on || s.banned_on.slice(0, 10) <= dateStr)) return false;
-      return true;
-    }).length;
+    const strength = students.filter(s => s.join_date === dateStr).length;
     const dropped = students.filter(s => {
       return s.banned && s.banned_on && s.banned_on.slice(0, 10) <= dateStr;
     }).length;
@@ -591,12 +587,20 @@ export default function HomeTab() {
           </FilterPopup>
         )}
 
+        <div
+          style={{ textAlign: 'center', margin: '10px 0 14px', cursor: 'pointer' }}
+          onClick={() => setDrilldown({ title: 'Active Students', icon: '👥', students: activeStudents })}
+        >
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,.75)', marginBottom: 4 }}>
+            👥 Total Students
+          </div>
+          <div style={{ fontSize: 42, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+            {currentStrength}
+          </div>
+        </div>
+
         <div className="stats-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 12 }}>
         {[
-          { key: 'total', icon: '👥', label: 'Total Students', value: currentStrength, caption: '',
-            onClick: () => setDrilldown({ title: 'Active Students', icon: '👥', students: activeStudents }) },
-          { key: 'joined', icon: '🆕', label: 'Joined', value: joinedStudents.length, caption: '',
-            onClick: () => setDrilldown({ title: 'Joined This Month', icon: '🆕', students: joinedStudents }) },
           // Fees Collected is admin-only — staff should not see money totals.
           ...(isAdmin ? [
             { key: 'collected', icon: '✅', label: 'Fees Collected', value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments',
@@ -650,7 +654,7 @@ export default function HomeTab() {
             {chartMode === 'attendance' ? 'Attendance' : 'Strength'} · <span style={{ color: 'var(--gray)', fontWeight: 600 }}>{monthLabel}</span>
           </div>
           <div style={{ display: 'flex', gap: 2, background: 'var(--royal)', borderRadius: 8, padding: 2 }}>
-            {['attendance', 'strength'].map(m => (
+            {['strength', 'attendance'].map(m => (
               <button key={m} onClick={() => setChartMode(m)}
                 style={{
                   border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700,
@@ -697,7 +701,7 @@ export default function HomeTab() {
                 </>
               ) : (
                 <>
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#5b7cc4' }}>●</span> Active</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#5b7cc4' }}>●</span> Joined</span>
                   <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#e0a04a' }}>●</span> Dropped</span>
                 </>
               )}
