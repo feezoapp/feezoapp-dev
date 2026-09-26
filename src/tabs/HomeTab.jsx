@@ -537,7 +537,7 @@ export default function HomeTab() {
   return (
     <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', paddingBottom: 70 }}>
       <div style={{
-        background: 'linear-gradient(160deg, #1A336A 0%, #132952 100%)',
+        background: '#1A336A',
         borderRadius: '0 0 28px 28px',
         margin: '-10px -14px 14px',
         padding: '14px 14px 16px',
@@ -546,19 +546,19 @@ export default function HomeTab() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <div className="section-title" style={{ color: '#fff' }}>Dashboard</div>
         </div>
-        <div className="my-nav">
-          <button className="my-nav-btn yr" onClick={() => nav('year', -1)} title="Previous Year">&lt;&lt;</button>
-          <button className="my-nav-btn" onClick={() => nav('month', -1)} title="Previous Month">&lt;</button>
-          <div className="my-nav-label">{monthLabel}</div>
-          <button className="my-nav-btn" onClick={() => nav('month', 1)} title="Next Month">&gt;</button>
-          <button className="my-nav-btn yr" onClick={() => nav('year', 1)} title="Next Year">&gt;&gt;</button>
+        <div className="my-nav" style={{ background: '#132952', border: '1px solid rgba(255,255,255,.15)' }}>
+          <button className="my-nav-btn yr" style={{ color: '#fff' }} onClick={() => nav('year', -1)} title="Previous Year">&lt;&lt;</button>
+          <button className="my-nav-btn" style={{ color: '#fff' }} onClick={() => nav('month', -1)} title="Previous Month">&lt;</button>
+          <div className="my-nav-label" style={{ color: '#fff' }}>{monthLabel}</div>
+          <button className="my-nav-btn" style={{ color: '#fff' }} onClick={() => nav('month', 1)} title="Next Month">&gt;</button>
+          <button className="my-nav-btn yr" style={{ color: '#fff' }} onClick={() => nav('year', 1)} title="Next Year">&gt;&gt;</button>
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
           <button
             className="btn btn-sm"
             style={{
               flex: 1, fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              background: 'rgba(255,255,255,.12)', color: '#fff', border: '1px solid rgba(255,255,255,.28)',
+              background: '#132952', color: '#fff', border: '1px solid rgba(255,255,255,.15)',
             }}
             onClick={() => setPopup('sport')}
           >
@@ -568,7 +568,7 @@ export default function HomeTab() {
             className="btn btn-sm"
             style={{
               flex: 1, fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              background: 'rgba(255,255,255,.12)', color: '#fff', border: '1px solid rgba(255,255,255,.28)',
+              background: '#132952', color: '#fff', border: '1px solid rgba(255,255,255,.15)',
             }}
             onClick={() => setPopup('batch')}
           >
@@ -596,43 +596,38 @@ export default function HomeTab() {
 
         <div className="stats-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 12 }}>
         {[
-          { key: 'total', icon: '👥', label: 'Total Students', value: currentStrength, caption: '', pct: 100,
+          { key: 'total', icon: '👥', label: 'Total Students', value: currentStrength, caption: '',
             onClick: () => setDrilldown({ title: 'Active Students', icon: '👥', students: activeStudents }) },
-          { key: 'joined', icon: '🆕', label: 'Joined', value: joinedStudents.length, caption: '', pct: joinedPct,
+          { key: 'joined', icon: '🆕', label: 'Joined', value: joinedStudents.length, caption: '',
             onClick: () => setDrilldown({ title: 'Joined This Month', icon: '🆕', students: joinedStudents }) },
           // Fees Collected is admin-only — staff should not see money totals.
           ...(isAdmin ? [
-            { key: 'collected', icon: '✅', label: 'Fees Collected', value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments', pct: collectedPct,
+            { key: 'collected', icon: '✅', label: 'Fees Collected', value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments',
               onClick: () => setDrilldown({ title: 'Fees Collected', icon: '✅', students: feeStudentList(collectedFees) }) },
           ] : []),
-          { key: 'pending', icon: '⚠️', label: 'Fee Pending', value: pending, caption: monthLabel, pct: pendingPct,
+          { key: 'pending', icon: '⚠️', label: 'Fee Pending', value: pending, caption: monthLabel,
             onClick: () => setDrilldown({ title: `Fee Pending (${monthLabel})`, icon: '⚠️', rows: pendingFeeRows }) },
         ].map(tile => (
           <div
             key={tile.key}
             style={{
-              cursor: 'pointer', height: 92, boxSizing: 'border-box', padding: '8px 10px',
+              cursor: 'pointer', height: 74, boxSizing: 'border-box', padding: '8px 10px',
               display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden',
-              background: '#F3F3F4', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,.15)',
+              background: '#132952', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,.15)',
             }}
             onClick={tile.onClick}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
               <span style={{ fontSize: 12.5, lineHeight: 1 }}>{tile.icon}</span>
-              <span style={{ fontSize: 10.5, fontWeight: 700, color: '#1A336A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {tile.label}
               </span>
             </div>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <PercentRing pct={tile.pct} size={40} strokeWidth={4} ringColor="#1A336A" trackColor="rgba(26,51,106,.18)" />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 15.5, fontWeight: 800, color: '#132952', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {tile.value}
-                </div>
-                <div style={{ fontSize: 8.5, opacity: 0.7, color: '#132952', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {tile.caption || '\u00A0'}
-                </div>
-              </div>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16.5, fontWeight: 800, color: '#fff' }}>
+              {tile.value}
+            </div>
+            <div style={{ fontSize: 8.5, opacity: 0.75, color: '#fff', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {tile.caption || '\u00A0'}
             </div>
           </div>
         ))}
