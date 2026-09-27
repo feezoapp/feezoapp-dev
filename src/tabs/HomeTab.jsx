@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useAcademyData } from '../context/AcademyDataContext';
 import { useAuth } from '../context/AuthContext';
@@ -53,12 +53,28 @@ function FilterPopup({ title, onClose, children }) {
   return (
     <div
       onClick={onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(10,18,35,.55)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', borderRadius: 12, padding: 14, width: '85%', maxWidth: 320, maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 8px 30px rgba(0,0,0,.4)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 800 }}>{title}</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--gray)', cursor: 'pointer' }}>×</button>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#fff', borderRadius: 18, padding: '16px 12px 12px', width: '100%', maxWidth: 300,
+          maxHeight: '72vh', overflowY: 'auto', boxShadow: '0 12px 34px rgba(10,18,35,.28)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginBottom: 6, padding: '0 4px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: '#1A336A', textAlign: 'center' }}>{title}</div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              position: 'absolute', right: 0, width: 26, height: 26, borderRadius: '50%',
+              background: '#f1f3f8', border: 'none', color: '#6b7385', fontSize: 15,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}
+          >
+            ×
+          </button>
         </div>
         {children}
       </div>
@@ -68,10 +84,166 @@ function FilterPopup({ title, onClose, children }) {
 
 function RadioRow({ name, checked, onChange, label }) {
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-      <input type="radio" name={name} checked={checked} onChange={onChange} />
+    <label
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, minHeight: 44,
+        padding: '10px 10px', borderRadius: 10, cursor: 'pointer', margin: '2px 0',
+        background: checked ? 'rgba(91,124,196,.12)' : 'transparent',
+        color: checked ? '#1A336A' : '#333',
+        fontWeight: checked ? 700 : 500,
+        transition: 'background .15s ease, color .15s ease',
+      }}
+    >
+      <input
+        type="radio" name={name} checked={checked} onChange={onChange}
+        style={{ width: 18, height: 18, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' }}
+      />
       {label}
     </label>
+  );
+}
+
+// One scrollable wheel column (used for both the month list and the year list
+// in MonthYearPickerModal). Snaps to the item nearest the center on scroll end.
+const WHEEL_ITEM_H = 36;
+const WHEEL_VISIBLE_ROWS = 5;
+const WHEEL_PAD = Math.floor(WHEEL_VISIBLE_ROWS / 2);
+
+function WheelColumn({ items, selectedIndex, onChange }) {
+  const scrollRef = useRef(null);
+  const settleTimer = useRef(null);
+  const programmatic = useRef(false);
+
+  // Keep the scroll position in sync when selectedIndex changes from outside
+  // (initial open, or a value picked by tapping a row directly).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = selectedIndex * WHEEL_ITEM_H;
+    if (Math.abs(el.scrollTop - target) > 1) {
+      programmatic.current = true;
+      el.scrollTo({ top: target, behavior: 'smooth' });
+      setTimeout(() => { programmatic.current = false; }, 260);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIndex]);
+
+  const handleScroll = () => {
+    if (programmatic.current) return;
+    clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const idx = Math.max(0, Math.min(items.length - 1, Math.round(el.scrollTop / WHEEL_ITEM_H)));
+      if (idx !== selectedIndex) onChange(idx);
+      el.scrollTo({ top: idx * WHEEL_ITEM_H, behavior: 'smooth' });
+    }, 110);
+  };
+
+  return (
+    <div
+      ref={scrollRef}
+      onScroll={handleScroll}
+      style={{
+        flex: 1, height: WHEEL_ITEM_H * WHEEL_VISIBLE_ROWS, overflowY: 'auto',
+        scrollSnapType: 'y mandatory', scrollbarWidth: 'none', msOverflowStyle: 'none',
+      }}
+    >
+      <style>{'div::-webkit-scrollbar{display:none}'}</style>
+      <div style={{ height: WHEEL_ITEM_H * WHEEL_PAD }} />
+      {items.map((label, i) => {
+        const isSel = i === selectedIndex;
+        return (
+          <div
+            key={label + i}
+            onClick={() => onChange(i)}
+            style={{
+              height: WHEEL_ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              scrollSnapAlign: 'center', cursor: 'pointer',
+              fontSize: isSel ? 15.5 : 14, fontWeight: isSel ? 700 : 500,
+              color: isSel ? '#1A336A' : 'rgba(20,30,55,.4)',
+              transition: 'color .15s ease, font-size .15s ease',
+            }}
+          >
+            {label}
+          </div>
+        );
+      })}
+      <div style={{ height: WHEEL_ITEM_H * WHEEL_PAD }} />
+    </div>
+  );
+}
+
+// Custom "Set month" picker: a compact two-column wheel (months / years)
+// styled to match the app's navy/blue theme, replacing the native
+// <input type="month"> control (which shows the generic OS picker).
+function MonthYearPickerModal({ month, year, onCancel, onClear, onSet }) {
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const nowYear = new Date().getFullYear();
+  const YEARS = useMemo(() => Array.from({ length: 21 }, (_, i) => nowYear - 10 + i), [nowYear]);
+
+  const [mIdx, setMIdx] = useState(month);
+  const [yIdx, setYIdx] = useState(Math.max(0, YEARS.indexOf(year)));
+
+  return (
+    <div
+      onClick={onCancel}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(10,18,35,.55)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#fff', borderRadius: 18, padding: '16px 14px 12px', width: '100%', maxWidth: 300,
+          boxShadow: '0 12px 34px rgba(10,18,35,.28)',
+        }}
+      >
+        <div style={{ fontSize: 14.5, fontWeight: 800, color: '#1A336A', marginBottom: 8, textAlign: 'center' }}>
+          Set month
+        </div>
+
+        <div style={{ position: 'relative' }}>
+          {/* subtle blue accent band marking the centered / selected row */}
+          <div style={{
+            position: 'absolute', left: 0, right: 0, top: WHEEL_ITEM_H * WHEEL_PAD, height: WHEEL_ITEM_H,
+            background: 'rgba(91,124,196,.12)', borderRadius: 10, pointerEvents: 'none',
+          }} />
+          <div style={{ display: 'flex' }}>
+            <WheelColumn items={MONTHS} selectedIndex={mIdx} onChange={setMIdx} />
+            <WheelColumn items={YEARS.map(String)} selectedIndex={yIdx} onChange={setYIdx} />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <button
+            onClick={onClear}
+            style={{
+              flex: 1, padding: '9px 0', borderRadius: 10, border: '1px solid #e0e5ee', background: '#fff',
+              color: '#6b7385', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            Clear
+          </button>
+          <button
+            onClick={onCancel}
+            style={{
+              flex: 1, padding: '9px 0', borderRadius: 10, border: '1px solid #e0e5ee', background: '#fff',
+              color: '#6b7385', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onSet(mIdx, YEARS[yIdx])}
+            style={{
+              flex: 1.2, padding: '9px 0', borderRadius: 10, border: 'none', background: '#1A336A',
+              color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', boxShadow: '0 3px 10px rgba(26,51,106,.35)',
+            }}
+          >
+            Set
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -563,19 +735,17 @@ export default function HomeTab() {
           <div className="section-title" style={{ color: '#fff' }}>Dashboard</div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <input
-            type="month"
-            value={`${year}-${pad2(month + 1)}`}
-            onChange={(e) => {
-              const [y, m] = e.target.value.split('-').map(Number);
-              if (y && m) { setYear(y); setMonth(m - 1); }
-            }}
+          <button
+            className="btn btn-sm"
             style={{
               flex: 1.3, fontSize: 12, fontWeight: 700, padding: '7px 8px', borderRadius: 8,
               background: '#132952', color: '#fff', border: '1px solid rgba(255,255,255,.15)',
-              colorScheme: 'dark', minWidth: 0,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}
-          />
+            onClick={() => setPopup('month')}
+          >
+            {monthLabelShort}
+          </button>
           <button
             className="btn btn-sm"
             style={{
@@ -597,6 +767,16 @@ export default function HomeTab() {
             {batchFilter === 'ALL' ? 'All Batches' : batchFilter}
           </button>
         </div>
+
+        {popup === 'month' && (
+          <MonthYearPickerModal
+            month={month}
+            year={year}
+            onCancel={() => setPopup(null)}
+            onClear={() => { setMonth(today.getMonth()); setYear(today.getFullYear()); setPopup(null); }}
+            onSet={(m, y) => { setMonth(m); setYear(y); setPopup(null); }}
+          />
+        )}
 
         {popup === 'sport' && (
           <FilterPopup title="Select Sport" onClose={() => setPopup(null)}>
@@ -735,8 +915,8 @@ export default function HomeTab() {
                 </>
               ) : (
                 <>
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#5b7cc4' }}>●</span> Joined</span>
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#e0a04a' }}>●</span> Dropped</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#5b7cc4' }}>●</span> Joined: {chartData[chartData.length - 1].strength}</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#e0a04a' }}>●</span> Dropped: {chartData[chartData.length - 1].dropped}</span>
                 </>
               )}
             </div>
