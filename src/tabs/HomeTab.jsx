@@ -537,8 +537,8 @@ export default function HomeTab() {
     const m = {}; students.forEach(s => { m[s.id] = s; }); return m;
   }, [students]);
 
-  // Chart series: attendance (present/absent per day) and strength (joined/dropped,
-  // cumulative from the 1st of the selected month up to each date).
+  // Chart series: attendance (present/absent per day) and strength (joined/dropped
+  // on that exact day, not a running total).
   // Attendance rows are matched against enrollmentKeySet (student+sport+batch),
   // not just student_id, so a filtered sport only counts that sport's marks.
   const monthStartStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
@@ -548,12 +548,10 @@ export default function HomeTab() {
       a.date === dateStr && enrollmentKeySet.has(keyFor(a.student_id, a.sport, a.batch)));
     const present = dayRows.filter(a => a.status === 'P').length;
     const absent = dayRows.filter(a => a.status === 'A').length;
-    const strength = students.filter(s =>
-      s.join_date && s.join_date >= monthStartStr && s.join_date <= dateStr).length;
+    const strength = students.filter(s => s.join_date === dateStr).length;
     const dropped = students.filter(s => {
       if (!s.banned || !s.banned_on) return false;
-      const bannedDate = s.banned_on.slice(0, 10);
-      return bannedDate >= monthStartStr && bannedDate <= dateStr;
+      return s.banned_on.slice(0, 10) === dateStr;
     }).length;
     return { day, dateStr, present, absent, strength, dropped };
   }), [dateRange, allAttendance, enrollmentKeySet, students, monthStartStr]);
@@ -825,8 +823,8 @@ export default function HomeTab() {
       <div style={{
         background: '#1A336A',
         borderRadius: '0 0 28px 28px',
-        margin: '-14px -14px 14px',
-        padding: '14px 14px 16px',
+        margin: '-14px -14px 8px',
+        padding: '14px 14px 28px',
         boxShadow: '0 6px 20px rgba(19,41,82,.35)',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -992,8 +990,8 @@ export default function HomeTab() {
                 </>
               ) : (
                 <>
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#5b7cc4' }}>●</span> Joined: {chartData[chartData.length - 1].strength}</span>
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#e0a04a' }}>●</span> Dropped: {chartData[chartData.length - 1].dropped}</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#5b7cc4' }}>●</span> Joined: {chartData.reduce((sum, d) => sum + d.strength, 0)}</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)' }}><span style={{ color: '#e0a04a' }}>●</span> Dropped: {chartData.reduce((sum, d) => sum + d.dropped, 0)}</span>
                 </>
               )}
             </div>
