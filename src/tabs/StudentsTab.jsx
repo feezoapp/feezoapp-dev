@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useAcademyData } from '../context/AcademyDataContext';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../context/PlanContext';
@@ -46,18 +46,36 @@ function RollBadge({ rollNo }) {
   );
 }
 
-// Same centered popup used by PerformancePage's Program/Sport/Sort filters —
-// a dark overlay + a card of radio rows, closing itself on selection.
+// Same popup styling used by HomeTab's Month/Sport/Batch filters — a dark
+// overlay + a centered white card of radio rows, closing itself on selection.
+// Only the presentation changed here; every caller below still passes the
+// same title/onClose/children and the same RadioRow name/checked/onChange/label.
 function FilterPopup({ title, onClose, children }) {
   return (
     <div
       onClick={onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(10,18,35,.55)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', borderRadius: 12, padding: 14, width: '85%', maxWidth: 320, maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 8px 30px rgba(0,0,0,.4)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 800 }}>{title}</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--gray)', cursor: 'pointer' }}>×</button>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#fff', borderRadius: 18, padding: '16px 12px 12px', width: '100%', maxWidth: 300,
+          maxHeight: '72vh', overflowY: 'auto', boxShadow: '0 12px 34px rgba(10,18,35,.28)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginBottom: 6, padding: '0 4px' }}>
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: '#1A336A', textAlign: 'center' }}>{title}</div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              position: 'absolute', right: 0, width: 26, height: 26, borderRadius: '50%',
+              background: '#f1f3f8', border: 'none', color: '#6b7385', fontSize: 15,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}
+          >
+            ×
+          </button>
         </div>
         {children}
       </div>
@@ -67,12 +85,50 @@ function FilterPopup({ title, onClose, children }) {
 
 function RadioRow({ name, checked, onChange, label }) {
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-      <input type="radio" name={name} checked={checked} onChange={onChange} />
+    <label
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, minHeight: 44,
+        padding: '10px 10px', borderRadius: 10, cursor: 'pointer', margin: '2px 0',
+        background: checked ? 'rgba(91,124,196,.12)' : 'transparent',
+        color: checked ? '#1A336A' : '#333',
+        fontWeight: checked ? 700 : 500,
+        transition: 'background .15s ease, color .15s ease',
+      }}
+    >
+      <input
+        type="radio" name={name} checked={checked} onChange={onChange}
+        style={{ width: 18, height: 18, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' }}
+      />
       {label}
     </label>
   );
 }
+
+// Rounded pill for the Active/Dropped counters in the header — same toggle
+// look as HomeTab's clickable summary chips (navy when active, quiet
+// neutral/red when not). tone only changes the *unselected* colors.
+function countPillStyle(active, tone) {
+  if (tone === 'red') {
+    return {
+      fontSize: 11.5, fontWeight: 700, padding: '6px 13px', borderRadius: 20, cursor: 'pointer', border: 'none',
+      background: active ? '#ef4444' : 'rgba(220,38,38,.12)', color: active ? '#fff' : '#ef4444',
+      whiteSpace: 'nowrap',
+    };
+  }
+  return {
+    fontSize: 11.5, fontWeight: 700, padding: '6px 13px', borderRadius: 20, cursor: 'pointer', border: 'none',
+    background: active ? '#1A336A' : 'var(--card2)', color: active ? '#fff' : 'var(--gray)',
+    whiteSpace: 'nowrap',
+  };
+}
+
+// Sport/Batch/Sort chip — same rounded, bordered "light" button used for
+// HomeTab's Month/Sport/Batch selectors, with a dropdown caret added.
+const filterChipStyle = {
+  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0,
+  fontSize: 11.5, fontWeight: 700, padding: '9px 8px', borderRadius: 12,
+  border: '1px solid var(--border)', background: 'var(--card2)', color: '#1A336A', cursor: 'pointer',
+};
 
 export default function StudentsTab() {
   const { visibleStudents, students, visibleSports, visibleBatches, refresh } = useAcademyData();
@@ -91,6 +147,15 @@ export default function StudentsTab() {
   const [restoring, setRestoring] = useState(false);
   const [detailStudent, setDetailStudent] = useState(null);
   const [editStudent, setEditStudent] = useState(null);
+  const searchInputRef = useRef(null);
+
+  // Tapping/clicking the search field again while it already has text
+  // selects the whole value instead of just dropping the cursor in — so
+  // typing immediately replaces the previous query. No-op on an empty
+  // field, so normal focus/typing behavior is unaffected.
+  const selectAllOnTap = (e) => {
+    if (e.target.value) e.target.select();
+  };
 
   const filtered = useMemo(() => {
     let list = visibleStudents.filter(s => {
@@ -211,17 +276,29 @@ export default function StudentsTab() {
 
   return (
     <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div className="section-title" style={{ marginBottom: 0, whiteSpace: 'nowrap' }}>👥 Students</div>
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+      {/* Header card — same white/bordered/shadowed container recipe as HomeTab's
+          Trends panel (var(--card) + var(--border) + 16px radius + soft shadow). */}
+      <div style={{
+        background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16,
+        padding: '14px 14px 12px', marginBottom: 10, boxShadow: '0 1px 4px rgba(0,0,0,.06)', flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 19 }}>👥</span>
+            <span style={{ fontSize: 16.5, fontWeight: 800, color: '#1A336A' }}>Students</span>
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'nowrap' }}>
+            {canExportStudents && <button className="btn btn-gold btn-sm" style={{ padding: '6px 10px', fontSize: 11, borderRadius: 10, fontWeight: 700 }} onClick={() => exportStudentsPdf(stripContact(filtered))}>PDF</button>}
+            {canExportStudents && <button className="btn btn-success btn-sm" style={{ padding: '6px 10px', fontSize: 11, borderRadius: 10, fontWeight: 700 }} onClick={() => exportStudentsXlsx(stripContact(filtered))}>XL</button>}
+            {canImportStudents && <button className="btn btn-outline btn-sm" style={{ padding: '6px 10px', fontSize: 11, borderRadius: 10, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => setShowImport(true)}>⬆️ Import</button>}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <button
               onClick={() => setStatusFilter(f => f === 'active' ? 'all' : 'active')}
-              style={{
-                fontSize: 9.5, fontWeight: 600, padding: '1px 6px', borderRadius: 10, cursor: 'pointer', lineHeight: 1.6,
-                border: statusFilter === 'active' ? '1.5px solid var(--gray)' : '1.5px solid transparent',
-                background: 'var(--card2)', color: 'var(--gray)',
-              }}
+              style={countPillStyle(statusFilter === 'active', 'blue')}
             >
               {(sportFilter || batchFilter || search)
                 ? `${activeList.length} active of ${visibleStudents.filter(s => !s.banned).length}`
@@ -230,11 +307,7 @@ export default function StudentsTab() {
             {visibleStudents.some(s => s.banned) && (
               <button
                 onClick={() => setStatusFilter(f => f === 'dropped' ? 'all' : 'dropped')}
-                style={{
-                  fontSize: 9.5, fontWeight: 600, padding: '1px 6px', borderRadius: 10, cursor: 'pointer', lineHeight: 1.6,
-                  border: statusFilter === 'dropped' ? '1.5px solid #ef4444' : '1.5px solid transparent',
-                  background: 'rgba(220,38,38,.12)', color: '#ef4444',
-                }}
+                style={countPillStyle(statusFilter === 'dropped', 'red')}
               >
                 {(sportFilter || batchFilter || search)
                   ? `${droppedList.length} dropped of ${visibleStudents.filter(s => s.banned).length}`
@@ -242,40 +315,67 @@ export default function StudentsTab() {
               </button>
             )}
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'nowrap', justifyContent: 'flex-end' }}>
-          {canExportStudents && <button className="btn btn-gold btn-sm" style={{ padding: '5px 8px', fontSize: 11 }} onClick={() => exportStudentsPdf(stripContact(filtered))}>PDF</button>}
-          {canExportStudents && <button className="btn btn-success btn-sm" style={{ padding: '5px 8px', fontSize: 11 }} onClick={() => exportStudentsXlsx(stripContact(filtered))}>XL</button>}
-          {canImportStudents && <button className="btn btn-outline btn-sm" style={{ padding: '5px 8px', fontSize: 11, whiteSpace: 'nowrap' }} onClick={() => setShowImport(true)}>⬆️ Import</button>}
           <LimitGatedButton
             resource="students"
             currentCount={students.length}
             onClick={() => setShowAdd(true)}
             className="btn btn-primary btn-sm"
-            style={{ padding: '5px 8px', fontSize: 11, whiteSpace: 'nowrap' }}
+            style={{ padding: '7px 15px', fontSize: 12, borderRadius: 10, fontWeight: 700, whiteSpace: 'nowrap' }}
           >
             + Add
           </LimitGatedButton>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 8 }}>
-        <div className="search-wrap">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-          <input type="text" className="search-input" placeholder="Search by name or roll number…"
-            value={search} onChange={e => setSearch(e.target.value)} />
-          {search && <button type="button" className="search-clear-btn" onClick={() => setSearch('')} aria-label="Clear search">✕</button>}
+      {/* Search + filters card — same container recipe as the header above. */}
+      <div style={{
+        background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16,
+        padding: 12, marginBottom: 10, boxShadow: '0 1px 4px rgba(0,0,0,.06)',
+        display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0,
+      }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <span style={{ position: 'absolute', left: 14, display: 'flex', color: 'var(--gray)', pointerEvents: 'none' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+          </span>
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onFocus={selectAllOnTap}
+            onClick={selectAllOnTap}
+            placeholder="Search by name or roll number…"
+            style={{
+              width: '100%', height: 46, padding: '0 40px 0 40px', boxSizing: 'border-box',
+              borderRadius: 14, border: '1px solid var(--border)', background: 'var(--card2)',
+              fontSize: 13.5, color: '#182238', outline: 'none',
+            }}
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch('')} aria-label="Clear search"
+              style={{
+                position: 'absolute', right: 10, width: 26, height: 26, borderRadius: '50%', border: 'none',
+                background: 'var(--border)', color: 'var(--gray)', cursor: 'pointer', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', fontSize: 12,
+              }}>
+              ✕
+            </button>
+          )}
         </div>
-        {/* sport / batch / sort — single row, opens the same popup style as Performance's filters */}
+
+        {/* sport / batch / sort — same rounded chip style, opens the same popup as before */}
         <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('sport')}>
-            {sportFilter || 'All Sports'}
+          <button style={filterChipStyle} onClick={() => setPopup('sport')}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sportFilter || 'All Sports'}</span>
+            <span style={{ fontSize: 9, flexShrink: 0 }}>▾</span>
           </button>
-          <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('batch')}>
-            {selectedBatchLabel || 'All Batches'}
+          <button style={filterChipStyle} onClick={() => setPopup('batch')}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedBatchLabel || 'All Batches'}</span>
+            <span style={{ fontSize: 9, flexShrink: 0 }}>▾</span>
           </button>
-          <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('sort')}>
-            {selectedSortLabel || 'Sort'}
+          <button style={filterChipStyle} onClick={() => setPopup('sort')}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedSortLabel || 'Sort'}</span>
+            <span style={{ fontSize: 9, flexShrink: 0 }}>▾</span>
           </button>
         </div>
       </div>
@@ -349,14 +449,18 @@ export default function StudentsTab() {
           : statusFilter === 'dropped' ? droppedList.length === 0
           : filtered.length === 0) && <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30 }}>No students found.</div>}
         {statusFilter !== 'dropped' && activeList.map(s => (
-          <div key={s.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, marginBottom: 8, cursor: 'pointer' }}
+          <div key={s.id} className="card" style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', marginBottom: 9, cursor: 'pointer',
+            background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+          }}
             onClick={(e) => { if (e.target.type !== 'checkbox') setDetailStudent(s); }}>
-            <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id, 'active')} onClick={e => e.stopPropagation()} />
+            <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id, 'active')} onClick={e => e.stopPropagation()}
+              style={{ width: 17, height: 17, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' }} />
             <RollBadge rollNo={s.roll_no} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>{s.name}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: 14, color: '#182238', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
             </div>
-            <span style={{ color: 'var(--gray)' }}>›</span>
+            <span style={{ color: 'var(--gray)', fontSize: 16, flexShrink: 0 }}>›</span>
           </div>
         ))}
 
@@ -367,19 +471,20 @@ export default function StudentsTab() {
             </div>
             {droppedList.map(s => (
               <div key={s.id} className="card" style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: 12, marginBottom: 8, cursor: 'pointer',
-                background: 'rgba(220,38,38,.05)', border: '1px solid rgba(220,38,38,.25)',
+                display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', marginBottom: 9, cursor: 'pointer',
+                background: 'rgba(220,38,38,.05)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 14,
               }}
                 onClick={(e) => { if (e.target.type !== 'checkbox') setDetailStudent(s); }}>
-                <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id, 'dropped')} onClick={e => e.stopPropagation()} />
+                <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id, 'dropped')} onClick={e => e.stopPropagation()}
+                  style={{ width: 17, height: 17, accentColor: '#ef4444', flexShrink: 0, cursor: 'pointer' }} />
                 <RollBadge rollNo={s.roll_no} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: '#182238', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     {s.name}
-                    <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(220,38,38,.12)', color: '#ef4444' }}>Dropout</span>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(220,38,38,.12)', color: '#ef4444', textTransform: 'none' }}>Dropout</span>
                   </div>
                 </div>
-                <span style={{ color: 'var(--gray)' }}>›</span>
+                <span style={{ color: 'var(--gray)', fontSize: 16, flexShrink: 0 }}>›</span>
               </div>
             ))}
           </>
