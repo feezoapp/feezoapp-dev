@@ -761,10 +761,10 @@ export default function HomeTab() {
       onClick: () => setDrilldown({
         type: 'students', title: 'Total Students', icon: <StudentsIcon size={22} color="#5b7cc4" />, filters,
         summary: [
-          { label: 'Total', value: students.length },
+          { label: 'Total', value: students.length, clickable: true, filterBadge: null },
           { label: 'Active', value: activeStudents.length },
-          { label: 'Joined', value: joinedStudents.length },
-          { label: 'Dropped', value: droppedStudents.length },
+          { label: 'Joined', value: joinedStudents.length, clickable: true, filterBadge: 'Joined' },
+          { label: 'Dropped', value: droppedStudents.length, clickable: true, filterBadge: 'Dropped' },
         ],
         items: totalStudentItems,
       }),
