@@ -29,6 +29,17 @@ function PendingIcon({ size = 24, color = '#F5B82E' }) {
   );
 }
 
+function StudentsIcon({ size = 24, color = '#5b7cc4' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 80 80" fill="none" stroke={color} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="30" cy="28" r="10" />
+      <path d="M12 60c0-11 8-18 18-18s18 7 18 18" />
+      <circle cx="56" cy="32" r="7.5" />
+      <path d="M46 60c0-8.5 5-14 13-14 4 0 7.5 1.5 10 4" />
+    </svg>
+  );
+}
+
 function CustomTooltip({ active, payload, label, mode }) {
   if (!active || !payload || !payload.length) return null;
   const key1 = mode === 'attendance' ? 'present' : 'strength';
@@ -693,7 +704,7 @@ export default function HomeTab() {
         // show the wrong sport for a student who paid across two sports.
         seen.set(seenKey, {
           ...s, id: seenKey, sport: f.sport, batchLabel: f.batch_label, extra: extraLabel,
-          paidDate: f.paid_date || '', paidAmount, totalAmount,
+          paidDate: f.paid_date || '', paidAmount, totalAmount, status: st,
           pendingAmount: totalAmount != null ? Math.max(totalAmount - paidAmount, 0) : null,
         });
       }
@@ -708,6 +719,93 @@ export default function HomeTab() {
   const monthLabel = monthLabelShort;
 
   const batchesForSport = visibleBatches.filter(b => sportFilter === 'ALL' || b.sport === sportFilter);
+
+  // --- Data for the redesigned stat cards + their drilldowns ---------------
+  // Current filter chips shown on every detail page header, so a student
+  // list is never read without knowing which Month/Sport/Batch scoped it.
+  const filters = {
+    monthLabel,
+    sportLabel: sportFilter === 'ALL' ? 'All Sports' : sportFilter,
+    batchLabel: batchFilter === 'ALL' ? 'All Batches' : batchFilter,
+  };
+
+  // Students who left during the browsed month (same window used for
+  // "active" above) — surfaced as its own summary number + list badge on
+  // the Total Students detail page.
+  const droppedStudents = students.filter(s => {
+    if (!s.banned || !s.banned_on) return false;
+    const bannedDate = s.banned_on.slice(0, 10);
+    return bannedDate >= monthStartStr && bannedDate <= refDateStr;
+  });
+
+  const totalStudentItems = [
+    ...activeStudents.map(s => ({
+      id: s.id, name: s.name, contact: s.contact || '', sport: s.sport, batchLabel: s.batchLabel, school: s.school || '',
+      badge: joinedStudents.includes(s) ? 'Joined' : 'Active',
+      badgeTone: joinedStudents.includes(s) ? 'blue' : 'green',
+    })),
+    ...droppedStudents.map(s => ({
+      id: s.id, name: s.name, contact: s.contact || '', sport: s.sport, batchLabel: s.batchLabel, school: s.school || '',
+      badge: 'Dropped', badgeTone: 'gray',
+    })),
+  ];
+
+  const collectedStudentList = feeStudentList(collectedFees);
+  const partialCollectedCount = collectedStudentList.filter(s => s.status === 'partial').length;
+
+  const totalPendingAmount = pendingFeeRows.reduce((sum, r) => sum + (r.remaining || 0), 0);
+  const hasKnownPendingAmount = pendingFeeRows.some(r => r.remaining != null);
+
+  const statTiles = [
+    {
+      key: 'students', icon: <StudentsIcon size={24} color="#5b7cc4" />, label: 'Total Students',
+      value: currentStrength, caption: joinedStudents.length > 0 ? `+${joinedStudents.length} joined` : 'Active roster',
+      onClick: () => setDrilldown({
+        type: 'students', title: 'Total Students', icon: <StudentsIcon size={22} color="#5b7cc4" />, filters,
+        summary: [
+          { label: 'Total', value: students.length },
+          { label: 'Active', value: activeStudents.length },
+          { label: 'Joined', value: joinedStudents.length },
+          { label: 'Dropped', value: droppedStudents.length },
+        ],
+        items: totalStudentItems,
+      }),
+    },
+    // Fees Collected is admin-only — staff should not see money totals.
+    ...(isAdmin ? [{
+      key: 'collected', icon: <CollectedIcon size={24} color="#36B89C" />, label: 'Fees Collected',
+      value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments',
+      onClick: () => setDrilldown({
+        type: 'collected', title: 'Fees Collected', icon: <CollectedIcon size={22} color="#36B89C" />, filters,
+        summary: [
+          { label: 'Students Paid', value: collectedStudentList.length },
+          { label: 'Total Collected', value: `₹${collected.toLocaleString()}` },
+          { label: 'Partial Payments', value: partialCollectedCount },
+        ],
+        items: collectedStudentList.map(s => ({
+          id: s.id, name: s.name, contact: s.contact || '', sport: s.sport, batchLabel: s.batchLabel, school: s.school || '',
+          amountLabel: s.status === 'partial' ? `₹${s.paidAmount} / ₹${s.totalAmount}` : `₹${s.paidAmount}`,
+          monthLabel, badge: s.status === 'partial' ? 'Partial' : null, badgeTone: 'amber',
+        })),
+      }),
+    }] : []),
+    {
+      key: 'pending', icon: <PendingIcon size={24} color="#F5B82E" />, label: 'Fee Pending',
+      value: pending, caption: monthLabel,
+      onClick: () => setDrilldown({
+        type: 'pending', title: 'Fee Pending', icon: <PendingIcon size={22} color="#F5B82E" />, filters,
+        summary: [
+          { label: 'Pending Students', value: pending },
+          { label: 'Total Pending', value: hasKnownPendingAmount ? `₹${totalPendingAmount.toLocaleString()}` : '—' },
+        ],
+        items: pendingFeeRows.map(r => ({
+          id: r.id, name: r.name, contact: r.contact || '', sport: r.sport, batchLabel: r.batchLabel, school: r.school || '',
+          amountLabel: r.due != null ? `₹${r.remaining} due` : 'Pending',
+          monthLabel: r.monthShort, badge: r.partial ? 'Partial' : null, badgeTone: 'amber',
+        })),
+      }),
+    },
+  ];
 
   // Per-tab access gate — after all hooks above, before any early return,
   // so Rules of Hooks holds. Staff without the Home tab granted (Staff
@@ -797,55 +895,34 @@ export default function HomeTab() {
         )}
 
         <div
-          style={{ textAlign: 'center', margin: '10px 0 14px', cursor: 'pointer' }}
-          onClick={() => setDrilldown({ title: 'Active Students', icon: '👥', students: activeStudents })}
+          className="stats-grid"
+          style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: `repeat(${statTiles.length}, 1fr)`, gap: 8, marginTop: 10, marginBottom: 8 }}
         >
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,.75)', marginBottom: 4 }}>
-            👥 Total Students
-          </div>
-          <div style={{ fontSize: 42, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
-            {currentStrength}
-          </div>
-        </div>
-
-        <div className="stats-grid" style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 12 }}>
-        {[
-          // Fees Collected is admin-only — staff should not see money totals.
-          ...(isAdmin ? [
-            { key: 'collected', iconNode: <CollectedIcon size={24} color="#36B89C" />, iconBg: 'rgba(54,184,156,0.18)', label: 'Fees Collected', value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments',
-              onClick: () => setDrilldown({ title: 'Fees Collected', icon: '✅', students: feeStudentList(collectedFees) }) },
-          ] : []),
-          { key: 'pending', iconNode: <PendingIcon size={24} color="#F5B82E" />, iconBg: 'rgba(245,184,46,0.18)', label: 'Fee Pending', value: pending, caption: monthLabel,
-            onClick: () => setDrilldown({ title: `Fee Pending (${monthLabel})`, icon: '⚠️', rows: pendingFeeRows }) },
-        ].map(tile => (
-          <div
-            key={tile.key}
-            style={{
-              cursor: 'pointer', height: 96, boxSizing: 'border-box', padding: '11px 13px',
-              display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden',
-              background: '#132952', borderRadius: 14, boxShadow: '0 2px 8px rgba(0,0,0,.15)',
-            }}
-            onClick={tile.onClick}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                background: tile.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {tile.iconNode}
+          {statTiles.map(tile => (
+            <div
+              key={tile.key}
+              onClick={tile.onClick}
+              style={{
+                cursor: 'pointer', boxSizing: 'border-box', overflow: 'hidden', minHeight: 96,
+                display: 'flex', flexDirection: 'column',
+                background: '#132952', borderRadius: 16, padding: '14px 12px',
+                border: '1px solid rgba(255,255,255,.06)', boxShadow: '0 4px 14px rgba(8,16,34,.28)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, minWidth: 0 }}>
+                {tile.icon}
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.68)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {tile.label}
+                </span>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {tile.label}
-              </span>
+              <div style={{ fontSize: 19, fontWeight: 800, color: '#fff', lineHeight: 1.2, wordBreak: 'break-word', marginTop: 'auto' }}>
+                {tile.value}
+              </div>
+              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,.5)', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {tile.caption || '\u00A0'}
+              </div>
             </div>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 800, color: '#fff' }}>
-              {tile.value}
-            </div>
-            <div style={{ fontSize: 10, opacity: 0.75, color: '#fff', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {tile.caption || '\u00A0'}
-            </div>
-          </div>
-        ))}
+          ))}
         </div>
       </div>
 
@@ -927,10 +1004,12 @@ export default function HomeTab() {
 
       {drilldown && (
         <StatDrilldownModal
+          type={drilldown.type}
           title={drilldown.title}
           icon={drilldown.icon}
-          students={drilldown.students || []}
-          rows={drilldown.rows}
+          filters={drilldown.filters}
+          summary={drilldown.summary || []}
+          items={drilldown.items || []}
           showContact={canViewContactHome}
           canExport={canExportHome}
           onClose={() => setDrilldown(null)}
