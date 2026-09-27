@@ -83,32 +83,30 @@ function sortBtnStyle(active) {
 //               amountLabel?, monthLabel?, badge?, badgeTone? }
 // summary shape: [{ label, value }]
 export default function StatDrilldownModal({ type, title, icon, filters, summary = [], items = [], showContact = true, canExport = true, onClose }) {
-  const [sortField, setSortField] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
+  // Which summary chip is currently narrowing the list (e.g. "Joined" /
+  // "Dropped" on the Total Students page). null = no filter, show everything.
+  const [activeFilter, setActiveFilter] = useState(null);
 
-  // Sorting by month only makes sense for the fee-based pages — the
-  // Total Students list has no per-item month.
+  // Sorting by month only makes sense when a page can show more than one
+  // month at once — every row here is already scoped to the same browsed
+  // month, so the Month sort is dead weight and is left off entirely.
   const hasMonth = type !== 'students';
 
+  const filteredItems = useMemo(() => (
+    activeFilter == null ? items : items.filter(it => it.badge === activeFilter)
+  ), [items, activeFilter]);
+
   const sortedItems = useMemo(() => {
-    const arr = [...items];
+    const arr = [...filteredItems];
     arr.sort((a, b) => {
-      const cmp = sortField === 'name'
-        ? (a.name || '').localeCompare(b.name || '')
-        : (a.monthLabel || '').localeCompare(b.monthLabel || '');
+      const cmp = (a.name || '').localeCompare(b.name || '');
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return arr;
-  }, [items, sortField, sortDir]);
+  }, [filteredItems, sortDir]);
 
-  const toggleSort = (field) => {
-    if (sortField === field) {
-      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDir('asc');
-    }
-  };
+  const toggleSort = () => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
 
   const handleExport = () => {
     const header = ['Name', ...(showContact ? ['Contact'] : []), 'Sport', 'Batch', 'School',
@@ -137,7 +135,7 @@ export default function StatDrilldownModal({ type, title, icon, filters, summary
                   {title}
                 </div>
                 <div style={{ fontSize: 11.5, color: 'var(--gray)', fontWeight: 600, marginTop: 1 }}>
-                  {items.length} student{items.length === 1 ? '' : 's'}
+                  {filteredItems.length} student{filteredItems.length === 1 ? '' : 's'}
                 </div>
               </div>
             </div>
@@ -165,28 +163,39 @@ export default function StatDrilldownModal({ type, title, icon, filters, summary
           )}
         </div>
 
-        {/* Summary chips — different set per stat type, passed in by the caller */}
+        {/* Summary chips — different set per stat type, passed in by the caller.
+            A chip with clickable:true narrows the list below to items whose
+            badge matches its filterBadge (null = clear filter / show all). */}
         {summary.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(summary.length, 4)}, 1fr)`, gap: 8, padding: '12px 14px 0', flexShrink: 0 }}>
-            {summary.map((s, i) => (
-              <div key={i} style={{ background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 6px', textAlign: 'center' }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: '#1A336A', lineHeight: 1.2, wordBreak: 'break-word' }}>{s.value}</div>
-                <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--gray)', marginTop: 2, textTransform: 'uppercase', letterSpacing: .3 }}>{s.label}</div>
-              </div>
-            ))}
+            {summary.map((s, i) => {
+              const isClickable = !!s.clickable;
+              const chipValue = s.filterBadge ?? null;
+              const isActive = isClickable && activeFilter === chipValue;
+              return (
+                <div
+                  key={i}
+                  onClick={isClickable ? () => setActiveFilter(prev => (prev === chipValue ? null : chipValue)) : undefined}
+                  style={{
+                    background: isActive ? '#1A336A' : 'var(--card2)',
+                    border: '1px solid var(--border)', borderRadius: 10, padding: '10px 6px', textAlign: 'center',
+                    cursor: isClickable ? 'pointer' : 'default',
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 60, boxSizing: 'border-box',
+                  }}
+                >
+                  <div style={{ fontSize: 17, fontWeight: 800, color: isActive ? '#fff' : '#1A336A', lineHeight: 1.15, wordBreak: 'break-word' }}>{s.value}</div>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: isActive ? 'rgba(255,255,255,.75)' : 'var(--gray)', marginTop: 3, textTransform: 'uppercase', letterSpacing: .3 }}>{s.label}</div>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {items.length > 1 && (
+        {filteredItems.length > 1 && (
           <div style={{ display: 'flex', gap: 6, padding: '10px 14px 0', flexShrink: 0 }}>
-            <button onClick={() => toggleSort('name')} style={sortBtnStyle(sortField === 'name')}>
-              Name {sortField === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+            <button onClick={toggleSort} style={sortBtnStyle(true)}>
+              Name {sortDir === 'asc' ? '↑' : '↓'}
             </button>
-            {hasMonth && (
-              <button onClick={() => toggleSort('month')} style={sortBtnStyle(sortField === 'month')}>
-                Month {sortField === 'month' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
-              </button>
-            )}
           </div>
         )}
 
@@ -198,11 +207,11 @@ export default function StatDrilldownModal({ type, title, icon, filters, summary
 
           {sortedItems.map((it, i) => (
             <div key={it.id || i} className="card" style={{
-              display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 13px', marginBottom: 8,
+              display: 'flex', flexDirection: 'column', gap: 6, padding: '13px 14px', marginBottom: 9,
               background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12,
             }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                <div style={{ fontWeight: 700, fontSize: 13.5, flex: 1, minWidth: 0, overflowWrap: 'break-word' }}>{it.name}</div>
+                <div style={{ fontWeight: 800, fontSize: 14.5, flex: 1, minWidth: 0, overflowWrap: 'break-word', color: '#182238' }}>{it.name}</div>
                 {it.badge && (
                   <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0, ...BADGE_STYLES[it.badgeTone || 'gray'] }}>
                     {it.badge}
@@ -211,22 +220,22 @@ export default function StatDrilldownModal({ type, title, icon, filters, summary
               </div>
 
               {(it.sport || it.school) && (
-                <div style={{ fontSize: 11.5, color: 'var(--gray)', overflowWrap: 'break-word' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--gray)', overflowWrap: 'break-word', lineHeight: 1.4 }}>
                   {[it.sport, it.batchLabel, it.school].filter(Boolean).join(' · ')}
                 </div>
               )}
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 2 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#1A336A', minWidth: 0, overflowWrap: 'break-word' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 8, rowGap: 6, marginTop: 3 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 800, color: '#1A336A', minWidth: 0, overflowWrap: 'break-word' }}>
                   {[it.amountLabel, it.monthLabel].filter(Boolean).join(' · ') || '\u00A0'}
                 </div>
                 {showContact ? (
                   it.contact ? (
                     <a href={`tel:${it.contact}`} onClick={e => e.stopPropagation()}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: 5, background: '#1A336A', color: '#fff',
-                        borderRadius: 8, padding: '0 12px', minHeight: 44, fontSize: 12, fontWeight: 700,
-                        textDecoration: 'none', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, background: '#1A336A', color: '#fff',
+                        borderRadius: 8, padding: '0 12px', minHeight: 44, minWidth: 44, fontSize: 12, fontWeight: 700,
+                        textDecoration: 'none', flexShrink: 0, marginLeft: 'auto',
                       }}>
                       <PhoneIcon size={13} color="#fff" /> {it.contact}
                     </a>
