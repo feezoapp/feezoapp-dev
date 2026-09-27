@@ -392,12 +392,12 @@ export default function TopBar({ academyName, logoUrl, greeting, onToggleMenu, o
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ position: 'relative' }}>
             <button onClick={openBell} aria-label="Notifications"
-              style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--card2)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              style={{ width: 34, height: 34, borderRadius: '50%', background: '#1A336A', border: '1px solid rgba(255,255,255,.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
-              {bellDot && <span style={{ position: 'absolute', top: 4, right: 4, width: 9, height: 9, background: bellDot, borderRadius: '50%', border: '2px solid var(--card2)' }} />}
+              {bellDot && <span style={{ position: 'absolute', top: 4, right: 4, width: 9, height: 9, background: bellDot, borderRadius: '50%', border: '2px solid #1A336A' }} />}
             </button>
 
             {showBellMenu && (
@@ -472,7 +472,7 @@ export default function TopBar({ academyName, logoUrl, greeting, onToggleMenu, o
             )}
           </div>
           <button className="hamburger-btn" onClick={onToggleMenu} aria-label="Navigation"
-            style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--card2)', border: '1px solid var(--border)' }}>
+            style={{ width: 34, height: 34, borderRadius: '50%', background: '#1A336A', border: '1px solid rgba(255,255,255,.15)' }}>
             <span></span><span></span><span></span>
           </button>
         </div>
