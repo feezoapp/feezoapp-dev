@@ -392,7 +392,7 @@ export default function TopBar({ academyName, logoUrl, greeting, onToggleMenu, o
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ position: 'relative' }}>
             <button onClick={openBell} aria-label="Notifications"
-              style={{ width: 34, height: 34, borderRadius: '50%', background: '#1A336A', border: '1px solid rgba(255,255,255,.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
+              style={{ width: 34, height: 34, borderRadius: '50%', background: '#1A336A', border: '1px solid #1A336A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -472,8 +472,10 @@ export default function TopBar({ academyName, logoUrl, greeting, onToggleMenu, o
             )}
           </div>
           <button className="hamburger-btn" onClick={onToggleMenu} aria-label="Navigation"
-            style={{ width: 34, height: 34, borderRadius: '50%', background: '#1A336A', border: '1px solid rgba(255,255,255,.15)' }}>
-            <span></span><span></span><span></span>
+            style={{ width: 34, height: 34, borderRadius: '50%', background: '#1A336A', border: '1px solid #1A336A' }}>
+            <span style={{ width: 20, height: 2, background: '#fff' }}></span>
+            <span style={{ width: 20, height: 2, background: '#fff' }}></span>
+            <span style={{ width: 20, height: 2, background: '#fff' }}></span>
           </button>
         </div>
         <div style={{ textAlign: 'right', lineHeight: 1.2 }}>
