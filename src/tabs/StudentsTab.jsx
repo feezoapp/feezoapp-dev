@@ -110,13 +110,13 @@ function RadioRow({ name, checked, onChange, label }) {
 function countPillStyle(active, tone) {
   if (tone === 'red') {
     return {
-      fontSize: 11.5, fontWeight: 700, padding: '6px 13px', borderRadius: 20, cursor: 'pointer', border: 'none',
+      fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 20, cursor: 'pointer', border: 'none',
       background: active ? '#ef4444' : 'rgba(220,38,38,.12)', color: active ? '#fff' : '#ef4444',
       whiteSpace: 'nowrap',
     };
   }
   return {
-    fontSize: 11.5, fontWeight: 700, padding: '6px 13px', borderRadius: 20, cursor: 'pointer', border: 'none',
+    fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 20, cursor: 'pointer', border: 'none',
     background: active ? '#1A336A' : 'var(--card2)', color: active ? '#fff' : 'var(--gray)',
     whiteSpace: 'nowrap',
   };
@@ -126,7 +126,7 @@ function countPillStyle(active, tone) {
 // HomeTab's Month/Sport/Batch selectors, with a dropdown caret added.
 const filterChipStyle = {
   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0,
-  fontSize: 11.5, fontWeight: 700, padding: '9px 8px', borderRadius: 12,
+  fontSize: 11, fontWeight: 700, padding: '8px 6px', borderRadius: 11,
   border: '1px solid var(--border)', background: 'var(--card2)', color: '#1A336A', cursor: 'pointer',
 };
 
@@ -277,25 +277,26 @@ export default function StudentsTab() {
   return (
     <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header card — same white/bordered/shadowed container recipe as HomeTab's
-          Trends panel (var(--card) + var(--border) + 16px radius + soft shadow). */}
+          Trends panel (var(--card) + var(--border) + 16px radius + soft shadow),
+          tightened to a compact two-row header per the latest spec. */}
       <div style={{
         background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16,
-        padding: '14px 14px 12px', marginBottom: 10, boxShadow: '0 1px 4px rgba(0,0,0,.06)', flexShrink: 0,
+        padding: '10px 12px 9px', marginBottom: 8, boxShadow: '0 1px 4px rgba(0,0,0,.06)', flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 19 }}>👥</span>
-            <span style={{ fontSize: 16.5, fontWeight: 800, color: '#1A336A' }}>Students</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 7, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 16 }}>👥</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: '#1A336A' }}>Students</span>
           </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'nowrap' }}>
-            {canExportStudents && <button className="btn btn-gold btn-sm" style={{ padding: '6px 10px', fontSize: 11, borderRadius: 10, fontWeight: 700 }} onClick={() => exportStudentsPdf(stripContact(filtered))}>PDF</button>}
-            {canExportStudents && <button className="btn btn-success btn-sm" style={{ padding: '6px 10px', fontSize: 11, borderRadius: 10, fontWeight: 700 }} onClick={() => exportStudentsXlsx(stripContact(filtered))}>XL</button>}
-            {canImportStudents && <button className="btn btn-outline btn-sm" style={{ padding: '6px 10px', fontSize: 11, borderRadius: 10, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => setShowImport(true)}>⬆️ Import</button>}
+          <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'nowrap' }}>
+            {canExportStudents && <button className="btn btn-gold btn-sm" style={{ padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700 }} onClick={() => exportStudentsPdf(stripContact(filtered))}>PDF</button>}
+            {canExportStudents && <button className="btn btn-success btn-sm" style={{ padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700 }} onClick={() => exportStudentsXlsx(stripContact(filtered))}>XL</button>}
+            {canImportStudents && <button className="btn btn-outline btn-sm" style={{ padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => setShowImport(true)}>⬆️ Import</button>}
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
             <button
               onClick={() => setStatusFilter(f => f === 'active' ? 'all' : 'active')}
               style={countPillStyle(statusFilter === 'active', 'blue')}
@@ -320,22 +321,22 @@ export default function StudentsTab() {
             currentCount={students.length}
             onClick={() => setShowAdd(true)}
             className="btn btn-primary btn-sm"
-            style={{ padding: '7px 15px', fontSize: 12, borderRadius: 10, fontWeight: 700, whiteSpace: 'nowrap' }}
+            style={{ padding: '6px 13px', fontSize: 11.5, borderRadius: 9, fontWeight: 700, whiteSpace: 'nowrap' }}
           >
             + Add
           </LimitGatedButton>
         </div>
       </div>
 
-      {/* Search + filters card — same container recipe as the header above. */}
+      {/* Search + filters card — same container recipe as the header above, also tightened. */}
       <div style={{
         background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16,
-        padding: 12, marginBottom: 10, boxShadow: '0 1px 4px rgba(0,0,0,.06)',
-        display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0,
+        padding: '10px 10px', marginBottom: 8, boxShadow: '0 1px 4px rgba(0,0,0,.06)',
+        display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0,
       }}>
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <span style={{ position: 'absolute', left: 14, display: 'flex', color: 'var(--gray)', pointerEvents: 'none' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+          <span style={{ position: 'absolute', left: 13, display: 'flex', color: 'var(--gray)', pointerEvents: 'none' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
           </span>
           <input
             ref={searchInputRef}
@@ -346,17 +347,17 @@ export default function StudentsTab() {
             onClick={selectAllOnTap}
             placeholder="Search by name or roll number…"
             style={{
-              width: '100%', height: 46, padding: '0 40px 0 40px', boxSizing: 'border-box',
-              borderRadius: 14, border: '1px solid var(--border)', background: 'var(--card2)',
-              fontSize: 13.5, color: '#182238', outline: 'none',
+              width: '100%', height: 40, padding: '0 38px 0 38px', boxSizing: 'border-box',
+              borderRadius: 12, border: '1px solid var(--border)', background: 'var(--card2)',
+              fontSize: 13, color: '#182238', outline: 'none',
             }}
           />
           {search && (
             <button type="button" onClick={() => setSearch('')} aria-label="Clear search"
               style={{
-                position: 'absolute', right: 10, width: 26, height: 26, borderRadius: '50%', border: 'none',
+                position: 'absolute', right: 9, width: 24, height: 24, borderRadius: '50%', border: 'none',
                 background: 'var(--border)', color: 'var(--gray)', cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center', fontSize: 12,
+                alignItems: 'center', justifyContent: 'center', fontSize: 11,
               }}>
               ✕
             </button>
@@ -450,7 +451,7 @@ export default function StudentsTab() {
           : filtered.length === 0) && <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30 }}>No students found.</div>}
         {statusFilter !== 'dropped' && activeList.map(s => (
           <div key={s.id} className="card" style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', marginBottom: 9, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', marginBottom: 8, cursor: 'pointer',
             background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 1px 3px rgba(0,0,0,.04)',
           }}
             onClick={(e) => { if (e.target.type !== 'checkbox') setDetailStudent(s); }}>
@@ -458,7 +459,7 @@ export default function StudentsTab() {
               style={{ width: 17, height: 17, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' }} />
             <RollBadge rollNo={s.roll_no} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 800, fontSize: 14, color: '#182238', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#182238', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
             </div>
             <span style={{ color: 'var(--gray)', fontSize: 16, flexShrink: 0 }}>›</span>
           </div>
@@ -471,7 +472,7 @@ export default function StudentsTab() {
             </div>
             {droppedList.map(s => (
               <div key={s.id} className="card" style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', marginBottom: 9, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', marginBottom: 8, cursor: 'pointer',
                 background: 'rgba(220,38,38,.05)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 14,
               }}
                 onClick={(e) => { if (e.target.type !== 'checkbox') setDetailStudent(s); }}>
@@ -479,9 +480,9 @@ export default function StudentsTab() {
                   style={{ width: 17, height: 17, accentColor: '#ef4444', flexShrink: 0, cursor: 'pointer' }} />
                 <RollBadge rollNo={s.roll_no} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 800, fontSize: 14, color: '#182238', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: '#182238', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     {s.name}
-                    <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(220,38,38,.12)', color: '#ef4444', textTransform: 'none' }}>Dropout</span>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(220,38,38,.12)', color: '#ef4444' }}>Dropout</span>
                   </div>
                 </div>
                 <span style={{ color: 'var(--gray)', fontSize: 16, flexShrink: 0 }}>›</span>
