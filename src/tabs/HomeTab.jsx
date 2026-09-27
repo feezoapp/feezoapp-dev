@@ -751,6 +751,12 @@ export default function HomeTab() {
   const collectedStudentList = feeStudentList(collectedFees);
   const partialCollectedCount = collectedStudentList.filter(s => s.status === 'partial').length;
 
+  // Eligible students who haven't paid anything yet this month — the
+  // complement of collectedStudentList, surfaced on the Fees Collected
+  // drilldown as its own "Not Paid" filter. Partial payers are excluded
+  // here since they already appear in collectedStudentList (amount > 0).
+  const notPaidRows = pendingFeeRows.filter(r => !r.partial);
+
   const totalPendingAmount = pendingFeeRows.reduce((sum, r) => sum + (r.remaining || 0), 0);
   const hasKnownPendingAmount = pendingFeeRows.some(r => r.remaining != null);
 
@@ -762,7 +768,7 @@ export default function HomeTab() {
         type: 'students', title: 'Total Students', icon: <StudentsIcon size={22} color="#5b7cc4" />, filters,
         summary: [
           { label: 'Total', value: students.length, clickable: true, filterBadge: null },
-          { label: 'Active', value: activeStudents.length },
+          { label: 'Active', value: activeStudents.length, clickable: true, filterBadge: 'Active' },
           { label: 'Joined', value: joinedStudents.length, clickable: true, filterBadge: 'Joined' },
           { label: 'Dropped', value: droppedStudents.length, clickable: true, filterBadge: 'Dropped' },
         ],
@@ -776,15 +782,23 @@ export default function HomeTab() {
       onClick: () => setDrilldown({
         type: 'collected', title: 'Fees Collected', icon: <CollectedIcon size={22} color="#36B89C" />, filters,
         summary: [
-          { label: 'Students Paid', value: collectedStudentList.length },
+          { label: 'Students Paid', value: collectedStudentList.length - partialCollectedCount, clickable: true, filterBadge: 'Paid' },
+          { label: 'Partial', value: partialCollectedCount, clickable: true, filterBadge: 'Partial' },
+          { label: 'Not Paid', value: notPaidRows.length, clickable: true, filterBadge: 'Not Paid' },
           { label: 'Total Collected', value: `₹${collected.toLocaleString()}` },
-          { label: 'Partial Payments', value: partialCollectedCount },
         ],
-        items: collectedStudentList.map(s => ({
-          id: s.id, name: s.name, contact: s.contact || '', sport: s.sport, batchLabel: s.batchLabel, school: s.school || '',
-          amountLabel: s.status === 'partial' ? `₹${s.paidAmount} / ₹${s.totalAmount}` : `₹${s.paidAmount}`,
-          monthLabel, badge: s.status === 'partial' ? 'Partial' : null, badgeTone: 'amber',
-        })),
+        items: [
+          ...collectedStudentList.map(s => ({
+            id: s.id, name: s.name, contact: s.contact || '', sport: s.sport, batchLabel: s.batchLabel, school: s.school || '',
+            amountLabel: s.status === 'partial' ? `₹${s.paidAmount} / ₹${s.totalAmount}` : `₹${s.paidAmount}`,
+            monthLabel, badge: s.status === 'partial' ? 'Partial' : 'Paid', badgeTone: s.status === 'partial' ? 'amber' : 'green',
+          })),
+          ...notPaidRows.map(r => ({
+            id: r.id, name: r.name, contact: r.contact || '', sport: r.sport, batchLabel: r.batchLabel, school: r.school || '',
+            amountLabel: r.due != null ? `₹${r.due} due` : 'Not paid',
+            monthLabel, badge: 'Not Paid', badgeTone: 'gray',
+          })),
+        ],
       }),
     }] : []),
     {
