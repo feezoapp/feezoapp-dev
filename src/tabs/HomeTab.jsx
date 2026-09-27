@@ -893,10 +893,34 @@ export default function HomeTab() {
         )}
 
         <div
-          className="stats-grid"
-          style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: `repeat(${statTiles.length}, 1fr)`, gap: 8, marginTop: 10, marginBottom: 8 }}
+          onClick={statTiles[0].onClick}
+          style={{
+            cursor: 'pointer', boxSizing: 'border-box', overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+            background: '#132952', borderRadius: 16, padding: '16px 14px',
+            border: '1px solid rgba(255,255,255,.06)', boxShadow: '0 4px 14px rgba(8,16,34,.28)',
+            marginTop: 10, marginBottom: 8,
+          }}
         >
-          {statTiles.map(tile => (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 6, minWidth: 0 }}>
+            {statTiles[0].icon}
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,.68)' }}>
+              {statTiles[0].label}
+            </span>
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1.15, wordBreak: 'break-word' }}>
+            {statTiles[0].value}
+          </div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)', marginTop: 4 }}>
+            {statTiles[0].caption || '\u00A0'}
+          </div>
+        </div>
+
+        <div
+          className="stats-grid"
+          style={{ flexShrink: 0, display: 'grid', gridTemplateColumns: `repeat(${statTiles.length - 1}, 1fr)`, gap: 8, marginBottom: 8 }}
+        >
+          {statTiles.slice(1).map(tile => (
             <div
               key={tile.key}
               onClick={tile.onClick}
