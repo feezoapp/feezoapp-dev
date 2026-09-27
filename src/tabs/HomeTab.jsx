@@ -330,21 +330,26 @@ export default function HomeTab() {
     const m = {}; students.forEach(s => { m[s.id] = s; }); return m;
   }, [students]);
 
-  // Chart series: attendance (present/absent per day) and strength (joined/dropped per day).
+  // Chart series: attendance (present/absent per day) and strength (joined/dropped,
+  // cumulative from the 1st of the selected month up to each date).
   // Attendance rows are matched against enrollmentKeySet (student+sport+batch),
   // not just student_id, so a filtered sport only counts that sport's marks.
+  const monthStartStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
   const chartData = useMemo(() => dateRange.map(dateStr => {
     const day = parseInt(dateStr.slice(-2), 10);
     const dayRows = allAttendance.filter(a =>
       a.date === dateStr && enrollmentKeySet.has(keyFor(a.student_id, a.sport, a.batch)));
     const present = dayRows.filter(a => a.status === 'P').length;
     const absent = dayRows.filter(a => a.status === 'A').length;
-    const strength = students.filter(s => s.join_date === dateStr).length;
+    const strength = students.filter(s =>
+      s.join_date && s.join_date >= monthStartStr && s.join_date <= dateStr).length;
     const dropped = students.filter(s => {
-      return s.banned && s.banned_on && s.banned_on.slice(0, 10) <= dateStr;
+      if (!s.banned || !s.banned_on) return false;
+      const bannedDate = s.banned_on.slice(0, 10);
+      return bannedDate >= monthStartStr && bannedDate <= dateStr;
     }).length;
     return { day, dateStr, present, absent, strength, dropped };
-  }), [dateRange, allAttendance, enrollmentKeySet, students]);
+  }), [dateRange, allAttendance, enrollmentKeySet, students, monthStartStr]);
 
   // Tiles scoped to the same month/sport/batch filters
   // Reference date for "active": today if viewing the current month, else the
