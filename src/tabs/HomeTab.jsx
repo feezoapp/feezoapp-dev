@@ -5,6 +5,30 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import StatDrilldownModal from '../components/StatDrilldownModal';
 
+function CollectedIcon({ size = 24, color = '#36B89C' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 80 80" fill="none" stroke={color} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 29h32a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V29z" />
+      <path d="M22 29l7-7h25a4 4 0 0 1 4 4v3" />
+      <path d="M44 37h14v11H44a5.5 5.5 0 0 1 0-11z" />
+      <path d="M50 40v5" />
+      <path d="M47.5 41.5c1.2-1.3 4.1-1.3 5.1.2 1.1 1.7-1.2 3-3 3.6-1.8.6-2.8 1.4-2.2 2.8.7 1.6 3.8 1.7 5.1.1" />
+    </svg>
+  );
+}
+
+function PendingIcon({ size = 24, color = '#F5B82E' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 80 80" fill="none" stroke={color} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M27 21h25v25l-4 4-4-4-4 4-4-4-5 4V21z" />
+      <path d="M33 29h13" />
+      <path d="M33 35h10" />
+      <circle cx="49" cy="51" r="11" />
+      <path d="M49 45v6l4 3" />
+    </svg>
+  );
+}
+
 function CustomTooltip({ active, payload, label, mode }) {
   if (!active || !payload || !payload.length) return null;
   const key1 = mode === 'attendance' ? 'present' : 'strength';
@@ -608,10 +632,10 @@ export default function HomeTab() {
         {[
           // Fees Collected is admin-only — staff should not see money totals.
           ...(isAdmin ? [
-            { key: 'collected', icon: '✅', label: 'Fees Collected', value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments',
+            { key: 'collected', iconNode: <CollectedIcon size={24} color="#36B89C" />, iconBg: 'rgba(54,184,156,0.18)', label: 'Fees Collected', value: `₹${collected.toLocaleString()}`, caption: 'Incl. partial payments',
               onClick: () => setDrilldown({ title: 'Fees Collected', icon: '✅', students: feeStudentList(collectedFees) }) },
           ] : []),
-          { key: 'pending', icon: '⚠️', label: 'Fee Pending', value: pending, caption: monthLabel,
+          { key: 'pending', iconNode: <PendingIcon size={24} color="#F5B82E" />, iconBg: 'rgba(245,184,46,0.18)', label: 'Fee Pending', value: pending, caption: monthLabel,
             onClick: () => setDrilldown({ title: `Fee Pending (${monthLabel})`, icon: '⚠️', rows: pendingFeeRows }) },
         ].map(tile => (
           <div
@@ -623,8 +647,13 @@ export default function HomeTab() {
             }}
             onClick={tile.onClick}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-              <span style={{ fontSize: 15, lineHeight: 1 }}>{tile.icon}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                background: tile.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {tile.iconNode}
+              </div>
               <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {tile.label}
               </span>
