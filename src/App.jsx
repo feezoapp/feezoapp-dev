@@ -98,8 +98,21 @@ function AppShell() {
     prevIndexRef.current = idx;
   }, [location.pathname]);
 
+  // Lock the document itself so only the inner content scrolls. Without this,
+  // a 100vh-tall shell is taller than the visible screen while Chrome's address
+  // bar is showing, so the page scrolls, the bar hides, and the header moves off.
+  useEffect(() => {
+    const html = document.documentElement;
+    const prev = [html.style.overflow, html.style.height, document.body.style.overflow, document.body.style.height, html.style.overscrollBehavior];
+    html.style.overflow = 'hidden'; html.style.height = '100%'; html.style.overscrollBehavior = 'none';
+    document.body.style.overflow = 'hidden'; document.body.style.height = '100%';
+    return () => {
+      [html.style.overflow, html.style.height, document.body.style.overflow, document.body.style.height, html.style.overscrollBehavior] = prev;
+    };
+  }, []);
+
   return (
-    <div id="app" className="active">
+    <div id="app" className="active" style={{ height: '100dvh', maxHeight: '100dvh', overflow: 'hidden' }}>
       <TopBar
         academyName={academy?.name || 'Academy'}
         logoUrl={academy?.logo_url}
@@ -148,7 +161,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
         <CircularLoader label="Signing you in..." />
       </div>
     );
