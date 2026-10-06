@@ -338,7 +338,7 @@ export default function StudentsTab() {
   const stripContact = (list) => canViewContactStudents ? list : list.map(({ contact, ...rest }) => rest);
 
   return (
-    <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
       {/* Header card — same white/bordered/shadowed container recipe as HomeTab's
           Trends panel (var(--card) + var(--border) + 16px radius + soft shadow),
           tightened to a compact two-row header per the latest spec. */}
@@ -563,7 +563,7 @@ export default function StudentsTab() {
           className="btn btn-primary"
           aria-label="Add student"
           style={{
-            position: 'fixed', right: 22, bottom: 18, zIndex: 40,
+            position: 'absolute', right: 18, bottom: 16, zIndex: 40,
             width: 54, height: 54, borderRadius: '50%', padding: 0, fontSize: 28, fontWeight: 400, lineHeight: 1,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 14px rgba(26,51,106,.35)',
