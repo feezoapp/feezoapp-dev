@@ -556,6 +556,7 @@ export default function StudentsTab() {
 
       {/* Floating add button — bottom right, hidden while selecting students */}
       {!selectMode && (
+        <div style={{ position: 'relative', height: 0, flexShrink: 0, overflow: 'visible' }}>
         <LimitGatedButton
           resource="students"
           currentCount={students.length}
@@ -571,6 +572,7 @@ export default function StudentsTab() {
         >
           +
         </LimitGatedButton>
+        </div>
       )}
 
       {showAdd && (
