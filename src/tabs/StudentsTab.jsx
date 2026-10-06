@@ -563,7 +563,7 @@ export default function StudentsTab() {
           className="btn btn-primary"
           aria-label="Add student"
           style={{
-            position: 'fixed', right: 16, bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))', zIndex: 40,
+            position: 'fixed', right: 22, bottom: 18, zIndex: 40,
             width: 54, height: 54, borderRadius: '50%', padding: 0, fontSize: 28, fontWeight: 400, lineHeight: 1,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 14px rgba(26,51,106,.35)',
