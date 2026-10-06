@@ -187,6 +187,7 @@ export default function StudentsTab() {
   const [sortBy, setSortBy] = useState('roll_asc');
   const [popup, setPopup] = useState(null); // 'sport' | 'batch' | 'sort' | null
   const [selected, setSelected] = useState(new Set());
+  const [showDownload, setShowDownload] = useState(false); // PDF / Excel chooser
   const [selectMode, setSelectMode] = useState(false); // turned on by long-pressing a student
   const [showAdd, setShowAdd] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'dropped' — toggled by the counter pills
@@ -352,8 +353,7 @@ export default function StudentsTab() {
             <span style={{ fontSize: 15, fontWeight: 800, color: '#1A336A' }}>Students</span>
           </div>
           <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'nowrap' }}>
-            {canExportStudents && <button className="btn btn-gold btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700 }} onClick={() => exportStudentsPdf(stripContact(filtered))}><TrayIcon /> PDF</button>}
-            {canExportStudents && <button className="btn btn-success btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700 }} onClick={() => exportStudentsXlsx(stripContact(filtered))}><TrayIcon /> Excel</button>}
+            {canExportStudents && <button className="btn btn-gold btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700 }} onClick={() => setShowDownload(true)}><TrayIcon /> Download</button>}
             {canImportStudents && <button className="btn btn-outline btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => setShowImport(true)}><TrayIcon up /> Import</button>}
           </div>
         </div>
@@ -553,6 +553,23 @@ export default function StudentsTab() {
           </>
         )}
       </div>
+
+      {showDownload && (
+        <FilterPopup title="Download as" onClose={() => setShowDownload(false)}>
+          <button
+            onClick={() => { setShowDownload(false); exportStudentsPdf(stripContact(filtered)); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 48, padding: '10px 12px', margin: '4px 0', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--card2)', color: '#1A336A', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+          >
+            <span style={{ fontSize: 20 }}>📄</span> PDF
+          </button>
+          <button
+            onClick={() => { setShowDownload(false); exportStudentsXlsx(stripContact(filtered)); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 48, padding: '10px 12px', margin: '4px 0', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--card2)', color: '#1A336A', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+          >
+            <span style={{ fontSize: 20 }}>📊</span> Excel
+          </button>
+        </FilterPopup>
+      )}
 
       {/* Floating add button — bottom right, hidden while selecting students */}
       {!selectMode && (
