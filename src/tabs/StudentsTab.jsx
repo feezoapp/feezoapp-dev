@@ -27,6 +27,42 @@ function compareRollNo(a, b) {
   return ra.localeCompare(rb);
 }
 
+// Long-press helper: hold a row ~600ms to trigger onLongPress; a normal tap
+// calls onTap. Moving the finger >10px (scrolling) cancels the hold, and the
+// click that follows a completed long press is swallowed.
+function useLongPress(onLongPress, onTap, ms = 600) {
+  const timer = useRef(null);
+  const fired = useRef(false);
+  const origin = useRef({ x: 0, y: 0 });
+  const clear = () => { clearTimeout(timer.current); timer.current = null; };
+
+  return (item) => ({
+    onPointerDown: (e) => {
+      fired.current = false;
+      origin.current = { x: e.clientX, y: e.clientY };
+      clear();
+      timer.current = setTimeout(() => {
+        fired.current = true;
+        timer.current = null;
+        navigator.vibrate?.(30);
+        onLongPress(item);
+      }, ms);
+    },
+    onPointerMove: (e) => {
+      if (timer.current &&
+          Math.hypot(e.clientX - origin.current.x, e.clientY - origin.current.y) > 10) clear();
+    },
+    onPointerUp: clear,
+    onPointerLeave: clear,
+    onPointerCancel: clear,
+    onContextMenu: (e) => e.preventDefault(),
+    onClick: () => {
+      if (fired.current) { fired.current = false; return; }
+      onTap(item);
+    },
+  });
+}
+
 const SORT_OPTIONS = [
   { v: 'roll_asc', l: 'Roll No ↑' },
   { v: 'roll_desc', l: 'Roll No ↓' },
@@ -139,6 +175,7 @@ export default function StudentsTab() {
   const [sortBy, setSortBy] = useState('roll_asc');
   const [popup, setPopup] = useState(null); // 'sport' | 'batch' | 'sort' | null
   const [selected, setSelected] = useState(new Set());
+  const [selectMode, setSelectMode] = useState(false); // turned on by long-pressing a student
   const [showAdd, setShowAdd] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'dropped' — toggled by the counter pills
   const [showImport, setShowImport] = useState(false);
@@ -214,6 +251,15 @@ export default function StudentsTab() {
     });
   };
 
+  const exitSelectMode = () => { setSelectMode(false); setSelected(new Set()); };
+
+  const pressProps = useLongPress(
+    (st) => { setSelectMode(true); setSelected(new Set([st.id])); },
+    (st) => selectMode
+      ? toggleSelect(st.id, st.banned ? 'dropped' : 'active')
+      : setDetailStudent(st),
+  );
+
   const selectAll = () => {
     const list = selectedGroup === 'dropped' ? droppedList : activeList;
     setSelected(new Set(list.map(s => s.id)));
@@ -225,7 +271,7 @@ export default function StudentsTab() {
     if (!confirm(`Delete ${selected.size} student(s)?`)) return;
     const deletedNames = visibleStudents.filter(s => selected.has(s.id)).map(s => s.name || s.roll_no || s.id);
     await supabase.from('students').delete().in('id', Array.from(selected));
-    setSelected(new Set());
+    exitSelectMode();
     refresh();
     logActivity({
       academyId, actorId: appUser?.id, actorName: appUser?.name, role: isAdmin ? 'admin' : 'staff',
@@ -243,7 +289,7 @@ export default function StudentsTab() {
       .in('id', Array.from(selected));
     setRestoring(false);
     setShowRestoreConfirm(false);
-    setSelected(new Set());
+    exitSelectMode();
     refresh();
     logActivity({
       academyId, actorId: appUser?.id, actorName: appUser?.name, role: isAdmin ? 'admin' : 'staff',
@@ -407,9 +453,17 @@ export default function StudentsTab() {
         </FilterPopup>
       )}
 
-      {selected.size > 0 && (
+      {selectMode && (
         <div style={{ background: 'var(--accent)', border: '1px solid var(--accent2)', borderRadius: 10, padding: '7px 8px', marginBottom: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)', marginBottom: 6 }}>{selected.size} selected</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)' }}>{selected.size} selected</div>
+            <button
+              onClick={exitSelectMode}
+              style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', border: '1.5px solid #000', borderRadius: 6, background: '#fff', color: '#000', cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)', gap: 4 }}>
             <button
               onClick={selectAll}
@@ -450,13 +504,13 @@ export default function StudentsTab() {
           : statusFilter === 'dropped' ? droppedList.length === 0
           : filtered.length === 0) && <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30 }}>No students found.</div>}
         {statusFilter !== 'dropped' && activeList.map(s => (
-          <div key={s.id} className="card" style={{
+          <div key={s.id} className="card" {...pressProps(s)} style={{
             display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', marginBottom: 8, cursor: 'pointer',
-            background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 1px 3px rgba(0,0,0,.04)',
-          }}
-            onClick={(e) => { if (e.target.type !== 'checkbox') setDetailStudent(s); }}>
-            <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id, 'active')} onClick={e => e.stopPropagation()}
-              style={{ width: 17, height: 17, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' }} />
+            background: selected.has(s.id) ? 'rgba(91,124,196,.16)' : 'var(--card)',
+            border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 1px 3px rgba(0,0,0,.04)',
+            outline: selected.has(s.id) ? '2px solid #1A336A' : 'none', outlineOffset: -2,
+            userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none', touchAction: 'pan-y',
+          }}>
             <RollBadge rollNo={s.roll_no} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: '#182238', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
@@ -471,13 +525,13 @@ export default function StudentsTab() {
               — Dropout / Banned Students —
             </div>
             {droppedList.map(s => (
-              <div key={s.id} className="card" style={{
+              <div key={s.id} className="card" {...pressProps(s)} style={{
                 display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', marginBottom: 8, cursor: 'pointer',
-                background: 'rgba(220,38,38,.05)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 14,
-              }}
-                onClick={(e) => { if (e.target.type !== 'checkbox') setDetailStudent(s); }}>
-                <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id, 'dropped')} onClick={e => e.stopPropagation()}
-                  style={{ width: 17, height: 17, accentColor: '#ef4444', flexShrink: 0, cursor: 'pointer' }} />
+                background: selected.has(s.id) ? 'rgba(220,38,38,.16)' : 'rgba(220,38,38,.05)',
+                border: '1px solid rgba(220,38,38,.25)', borderRadius: 14,
+                outline: selected.has(s.id) ? '2px solid #ef4444' : 'none', outlineOffset: -2,
+                userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none', touchAction: 'pan-y',
+              }}>
                 <RollBadge rollNo={s.roll_no} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 14, color: '#182238', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -535,7 +589,7 @@ export default function StudentsTab() {
           academyId={academyId}
           mode={selectedGroup}
           onClose={() => setShowBulkEdit(false)}
-          onSaved={() => { setShowBulkEdit(false); setSelected(new Set()); refresh(); }}
+          onSaved={() => { setShowBulkEdit(false); exitSelectMode(); refresh(); }}
         />
       )}
 
