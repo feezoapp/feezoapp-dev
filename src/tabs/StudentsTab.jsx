@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAcademyData } from '../context/AcademyDataContext';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../context/PlanContext';
@@ -61,6 +61,18 @@ function useLongPress(onLongPress, onTap, ms = 600) {
       onTap(item);
     },
   });
+}
+
+// Download / upload icons (arrow into/out of a tray) — stroke follows the button's text color.
+function TrayIcon({ up, size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      {up
+        ? <><line x1="12" y1="15" x2="12" y2="3" /><polyline points="7 8 12 3 17 8" /></>
+        : <><line x1="12" y1="3" x2="12" y2="15" /><polyline points="7 10 12 15 17 10" /></>}
+      <path d="M4 17v3h16v-3" />
+    </svg>
+  );
 }
 
 const SORT_OPTIONS = [
@@ -253,6 +265,11 @@ export default function StudentsTab() {
 
   const exitSelectMode = () => { setSelectMode(false); setSelected(new Set()); };
 
+  // Leave select mode (and hide the action bar) as soon as nothing is selected.
+  useEffect(() => {
+    if (selectMode && selected.size === 0) setSelectMode(false);
+  }, [selectMode, selected]);
+
   const pressProps = useLongPress(
     (st) => { setSelectMode(true); setSelected(new Set([st.id])); },
     (st) => selectMode
@@ -335,9 +352,9 @@ export default function StudentsTab() {
             <span style={{ fontSize: 15, fontWeight: 800, color: '#1A336A' }}>Students</span>
           </div>
           <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'nowrap' }}>
-            {canExportStudents && <button className="btn btn-gold btn-sm" style={{ padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700 }} onClick={() => exportStudentsPdf(stripContact(filtered))}>PDF</button>}
-            {canExportStudents && <button className="btn btn-success btn-sm" style={{ padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700 }} onClick={() => exportStudentsXlsx(stripContact(filtered))}>XL</button>}
-            {canImportStudents && <button className="btn btn-outline btn-sm" style={{ padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => setShowImport(true)}>⬆️ Import</button>}
+            {canExportStudents && <button className="btn btn-gold btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700 }} onClick={() => exportStudentsPdf(stripContact(filtered))}><TrayIcon /> PDF</button>}
+            {canExportStudents && <button className="btn btn-success btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700 }} onClick={() => exportStudentsXlsx(stripContact(filtered))}><TrayIcon /> Excel</button>}
+            {canImportStudents && <button className="btn btn-outline btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => setShowImport(true)}><TrayIcon up /> Import</button>}
           </div>
         </div>
 
@@ -362,15 +379,6 @@ export default function StudentsTab() {
               </button>
             )}
           </div>
-          <LimitGatedButton
-            resource="students"
-            currentCount={students.length}
-            onClick={() => setShowAdd(true)}
-            className="btn btn-primary btn-sm"
-            style={{ padding: '6px 13px', fontSize: 11.5, borderRadius: 9, fontWeight: 700, whiteSpace: 'nowrap' }}
-          >
-            + Add
-          </LimitGatedButton>
         </div>
       </div>
 
@@ -545,6 +553,25 @@ export default function StudentsTab() {
           </>
         )}
       </div>
+
+      {/* Floating add button — bottom right, hidden while selecting students */}
+      {!selectMode && (
+        <LimitGatedButton
+          resource="students"
+          currentCount={students.length}
+          onClick={() => setShowAdd(true)}
+          className="btn btn-primary"
+          aria-label="Add student"
+          style={{
+            position: 'fixed', right: 16, bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))', zIndex: 40,
+            width: 54, height: 54, borderRadius: '50%', padding: 0, fontSize: 28, fontWeight: 400, lineHeight: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(26,51,106,.35)',
+          }}
+        >
+          +
+        </LimitGatedButton>
+      )}
 
       {showAdd && (
         <AddStudentModal
