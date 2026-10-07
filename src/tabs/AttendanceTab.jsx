@@ -53,7 +53,7 @@ const ATTENDANCE_CSS = `
 .at-btn:active:not(:disabled){transform:scale(.96)}
 .at-btn:focus-visible,.at-card:focus-visible,.at-check:focus-within{outline:2px solid #5B7CC4;outline-offset:2px}
 .at-chip:hover{border-color:#9DB2DD}
-.at-round:hover:not(:disabled){background:#0B3358}
+.at-round:hover:not(:disabled){background:#EEF2FA}
 .at-search{transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
 .at-search:focus{border-color:#5B7CC4 !important;box-shadow:0 0 0 3px rgba(91,124,196,.18);background:#fff !important}
 .at-panel{animation:at-pop .16s ease}
@@ -83,14 +83,14 @@ function chipStyle(on) {
   };
 }
 
-// Header action buttons (PDF / Excel / Import) — identical to the Students
-// tab's `roundIconBtn` (36px solid-navy circle, white icon, same shadow).
+// Header action buttons (Download / Import) — outlined style: white circle,
+// navy ring, navy arrow (the top row of the reference icons).
 function actionBtnStyle(disabled) {
   return {
-    width: 36, height: 36, borderRadius: '50%', border: 'none', padding: 0, flexShrink: 0,
-    background: '#04213A', color: '#fff', cursor: disabled ? 'not-allowed' : 'pointer',
+    width: 36, height: 36, borderRadius: '50%', border: '2px solid #04213A', padding: 0, flexShrink: 0,
+    background: '#fff', color: '#04213A', cursor: disabled ? 'not-allowed' : 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 1px 3px rgba(4,33,58,.3)', opacity: disabled ? 0.5 : 1,
+    boxShadow: '0 1px 3px rgba(4,33,58,.2)', opacity: disabled ? 0.5 : 1,
   };
 }
 
@@ -1013,16 +1013,13 @@ export default function AttendanceTab() {
   const dateTitle = viewMode === 'year' ? String(year) : viewMode === 'month' ? `${MONTHS[month]} ${year}` : dateLabel;
   const markAllHint = (!sportFilter || !batchFilter) ? 'Pick a specific sport and batch to use Mark All' : undefined;
   const checkLabelStyle = (on, accent) => ({
-    flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, height: 36, padding: '0 4px', borderRadius: 10, whiteSpace: 'nowrap',
+    flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, height: 30, padding: '0 4px', borderRadius: 8, whiteSpace: 'nowrap',
     border: `1px solid ${on ? accent : 'var(--border)'}`, background: on ? `${accent}14` : 'var(--card)',
-    color: on ? accent : '#1A336A', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', transition: 'background-color .15s ease, border-color .15s ease',
+    color: on ? accent : '#1A336A', fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'background-color .15s ease, border-color .15s ease',
   });
   const statTile = (icon, n, label, color) => (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 3, color, fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>
-        <Icon name={icon} size={13} /> {n}
-      </div>
-      <div style={{ fontSize: 9.5, fontWeight: 500, color: 'var(--gray)' }}>{label}</div>
+    <div title={label} aria-label={`${label}: ${n}`} role="img" style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, color, fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>
+      <Icon name={icon} size={15} /> {n}
     </div>
   );
 
@@ -1230,26 +1227,19 @@ export default function AttendanceTab() {
       {viewMode === 'day' ? (
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', marginBottom: 6, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 1px 2px rgba(16,32,64,.05)' }}>
           {/* Summary tiles — left */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
-            {!classDay && (
-              <span title="No one marked yet — likely a holiday" aria-label="No one marked yet — likely a holiday"
-                style={{ display: 'flex', color: '#B45309' }}>
-                <Icon name="umbrella" size={13} />
-              </span>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, padding: '0 2px' }}>
             {statTile('checkCircle', presentCount, 'Present', '#1A336A')}
             {statTile('xCircle', absentCount, 'Absent', '#DC2626')}
             {statTile('clock', notMarkedCount, 'Pending', '#6B7385')}
-            {statTile('users', students.length, 'Total', '#1A336A')}
           </div>
           {/* All Present / All Absent — right, same line */}
           {!isFutureDate && (
             <div style={{ display: 'flex', gap: 5, flex: '1 1 0', minWidth: 0 }}>
               <label className="at-check" style={checkLabelStyle(allPChecked, '#1A336A')} title={markAllHint || 'Mark all Present'}>
-                <input type="checkbox" checked={allPChecked} onChange={() => markAll('P')} aria-label="All Present" style={{ width: 15, height: 15, margin: 0, accentColor: '#1A336A', cursor: 'pointer', flexShrink: 0 }} /> All P
+                <input type="checkbox" checked={allPChecked} onChange={() => markAll('P')} aria-label="All Present" style={{ width: 13, height: 13, margin: 0, accentColor: '#1A336A', cursor: 'pointer', flexShrink: 0 }} /> All P
               </label>
               <label className="at-check" style={checkLabelStyle(allAChecked, '#DC2626')} title={markAllHint || 'Mark all Absent'}>
-                <input type="checkbox" checked={allAChecked} onChange={() => markAll('A')} aria-label="All Absent" style={{ width: 15, height: 15, margin: 0, accentColor: '#DC2626', cursor: 'pointer', flexShrink: 0 }} /> All A
+                <input type="checkbox" checked={allAChecked} onChange={() => markAll('A')} aria-label="All Absent" style={{ width: 13, height: 13, margin: 0, accentColor: '#DC2626', cursor: 'pointer', flexShrink: 0 }} /> All A
               </label>
             </div>
           )}
