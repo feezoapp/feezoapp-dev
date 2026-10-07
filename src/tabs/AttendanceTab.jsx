@@ -16,6 +16,7 @@ const ICONS = {
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></>,
   fileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /><path d="M10 9H8" /></>,
   sheet: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6" /><path d="M8 13h2" /><path d="M14 13h2" /><path d="M8 17h2" /><path d="M14 17h2" /></>,
+  download: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M4 17v3h16v-3" /></>,
   upload: <><path d="M12 15V3" /><path d="m7 8 5-5 5 5" /><path d="M4 17v3h16v-3" /></>,
   chevronDown: <path d="m6 9 6 6 6-6" />,
   chevronUp: <path d="m18 15-6-6-6 6" />,
@@ -269,6 +270,7 @@ export default function AttendanceTab() {
   const [completing, setCompleting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showDownload, setShowDownload] = useState(false); // PDF / Excel chooser
   const [reloadKey, setReloadKey] = useState(0);
   const [showScrollArrow, setShowScrollArrow] = useState(false);
   const listScrollRef = useRef(null);
@@ -1011,16 +1013,16 @@ export default function AttendanceTab() {
   const dateTitle = viewMode === 'year' ? String(year) : viewMode === 'month' ? `${MONTHS[month]} ${year}` : dateLabel;
   const markAllHint = (!sportFilter || !batchFilter) ? 'Pick a specific sport and batch to use Mark All' : undefined;
   const checkLabelStyle = (on, accent) => ({
-    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 34, borderRadius: 10,
+    flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, height: 36, padding: '0 4px', borderRadius: 10, whiteSpace: 'nowrap',
     border: `1px solid ${on ? accent : 'var(--border)'}`, background: on ? `${accent}14` : 'var(--card)',
-    color: on ? accent : '#1A336A', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', transition: 'background-color .15s ease, border-color .15s ease',
+    color: on ? accent : '#1A336A', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', transition: 'background-color .15s ease, border-color .15s ease',
   });
   const statTile = (icon, n, label, color) => (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, color, fontWeight: 700, fontSize: 16, lineHeight: 1.2 }}>
-        <Icon name={icon} size={15} /> {n}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 3, color, fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>
+        <Icon name={icon} size={13} /> {n}
       </div>
-      <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>{label}</div>
+      <div style={{ fontSize: 9.5, fontWeight: 500, color: 'var(--gray)' }}>{label}</div>
     </div>
   );
 
@@ -1036,10 +1038,7 @@ export default function AttendanceTab() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
           {canExportAttendance && hasFeature('has_reports') && (
-            <>
-              <button className="at-btn at-round" style={actionBtnStyle(false)} onClick={() => doExport('pdf')} aria-label="Export PDF" title="Export PDF"><Icon name="fileText" size={17} /></button>
-              <button className="at-btn at-round" style={actionBtnStyle(false)} onClick={() => doExport('xlsx')} aria-label="Export Excel" title="Export Excel"><Icon name="sheet" size={17} /></button>
-            </>
+            <button className="at-btn at-round" style={actionBtnStyle(false)} onClick={() => setShowDownload(true)} aria-label="Download attendance" title="Download"><Icon name="download" size={18} /></button>
           )}
           {canExportAttendance && !hasFeature('has_reports') && (() => {
             const target = cheapestPlanWithFeature('has_reports');
@@ -1051,7 +1050,7 @@ export default function AttendanceTab() {
             );
           })()}
           {canImportAttendance && hasFeature('has_bulk_import') && (
-            <button className="at-btn at-round" style={actionBtnStyle(false)} onClick={() => setShowImport(true)} aria-label="Import attendance" title="Import attendance"><Icon name="upload" size={17} /></button>
+            <button className="at-btn at-round" style={actionBtnStyle(false)} onClick={() => setShowImport(true)} aria-label="Import attendance" title="Import"><Icon name="upload" size={18} /></button>
           )}
           {canImportAttendance && !hasFeature('has_bulk_import') && (() => {
             const target = cheapestPlanWithFeature('has_bulk_import');
@@ -1229,26 +1228,28 @@ export default function AttendanceTab() {
 
       {/* Summary — always visible, doesn't hide on scroll */}
       {viewMode === 'day' ? (
-        <div style={{ flexShrink: 0 }}>
-          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 4, padding: '5px 6px', marginBottom: 6, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 1px 2px rgba(16,32,64,.05)' }}>
+        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', marginBottom: 6, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 1px 2px rgba(16,32,64,.05)' }}>
+          {/* Summary tiles — left */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
+            {!classDay && (
+              <span title="No one marked yet — likely a holiday" aria-label="No one marked yet — likely a holiday"
+                style={{ display: 'flex', color: '#B45309' }}>
+                <Icon name="umbrella" size={13} />
+              </span>
+            )}
             {statTile('checkCircle', presentCount, 'Present', '#1A336A')}
             {statTile('xCircle', absentCount, 'Absent', '#DC2626')}
             {statTile('clock', notMarkedCount, 'Pending', '#6B7385')}
             {statTile('users', students.length, 'Total', '#1A336A')}
-            {!classDay && (
-              <span title="No one marked yet — likely a holiday" aria-label="No one marked yet — likely a holiday"
-                style={{ position: 'absolute', top: 4, right: 6, display: 'flex', color: '#B45309' }}>
-                <Icon name="umbrella" size={13} />
-              </span>
-            )}
           </div>
+          {/* All Present / All Absent — right, same line */}
           {!isFutureDate && (
-            <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-              <label className="at-check" style={checkLabelStyle(allPChecked, '#1A336A')} title={markAllHint}>
-                <input type="checkbox" checked={allPChecked} onChange={() => markAll('P')} style={{ width: 17, height: 17, accentColor: '#1A336A', cursor: 'pointer' }} /> All Present
+            <div style={{ display: 'flex', gap: 5, flex: '1 1 0', minWidth: 0 }}>
+              <label className="at-check" style={checkLabelStyle(allPChecked, '#1A336A')} title={markAllHint || 'Mark all Present'}>
+                <input type="checkbox" checked={allPChecked} onChange={() => markAll('P')} aria-label="All Present" style={{ width: 15, height: 15, margin: 0, accentColor: '#1A336A', cursor: 'pointer', flexShrink: 0 }} /> All P
               </label>
-              <label className="at-check" style={checkLabelStyle(allAChecked, '#DC2626')} title={markAllHint}>
-                <input type="checkbox" checked={allAChecked} onChange={() => markAll('A')} style={{ width: 17, height: 17, accentColor: '#DC2626', cursor: 'pointer' }} /> All Absent
+              <label className="at-check" style={checkLabelStyle(allAChecked, '#DC2626')} title={markAllHint || 'Mark all Absent'}>
+                <input type="checkbox" checked={allAChecked} onChange={() => markAll('A')} aria-label="All Absent" style={{ width: 15, height: 15, margin: 0, accentColor: '#DC2626', cursor: 'pointer', flexShrink: 0 }} /> All A
               </label>
             </div>
           )}
@@ -1429,6 +1430,21 @@ export default function AttendanceTab() {
       >
         <Icon name="chevronDown" size={18} stroke={2.4} />
       </button>
+
+      {showDownload && (
+        <FilterPopup title="Download as" onClose={() => setShowDownload(false)}>
+          {[['pdf', 'fileText', 'PDF'], ['xlsx', 'sheet', 'Excel']].map(([kind, icon, label]) => (
+            <button
+              key={kind}
+              className="at-btn at-chip"
+              onClick={() => { setShowDownload(false); doExport(kind); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 48, padding: '10px 12px', margin: '4px 0', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--card2)', color: '#1A336A', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              <span style={{ display: 'flex', color: '#1A336A' }}><Icon name={icon} size={20} /></span> {label}
+            </button>
+          ))}
+        </FilterPopup>
+      )}
 
       {showImport && (
         <ImportAttendanceModal
