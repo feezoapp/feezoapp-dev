@@ -445,10 +445,7 @@ export default function StudentsTab() {
       <style>{STUDENTS_CSS}</style>
 
       {/* Header: title + count badges on the left, Download / Import on the right */}
-      <div style={{
-        background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14,
-        padding: '8px 12px', marginBottom: 6, boxShadow: '0 1px 2px rgba(16,32,64,.05)', flexShrink: 0,
-      }}>
+      <div style={{ marginBottom: 6, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexWrap: 'wrap', rowGap: 4 }}>
             <span style={{ display: 'flex', color: '#1A336A' }}><Icon name="users" size={19} /></span>
