@@ -108,7 +108,7 @@ const STUDENTS_CSS = `
 .st-btn:active:not(:disabled){transform:scale(.95)}
 .st-btn:disabled{cursor:not-allowed}
 .st-btn:focus-visible,.st-list .st-card:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
-.st-round:hover:not(:disabled){background:#0B3358}
+.st-round:hover:not(:disabled){background:#EEF2FA}
 .st-chip:hover{border-color:#9DB2DD}
 .st-search{transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
 .st-search:focus{border-color:#5B7CC4 !important;box-shadow:0 0 0 3px rgba(91,124,196,.18);background:#fff !important}
@@ -134,14 +134,14 @@ const SORT_OPTIONS = [
 
 function RollBadge({ rollNo }) {
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      minWidth: 38, height: 22, padding: '0 8px', borderRadius: 7,
-      background: 'var(--accent2)', color: '#fff', fontSize: 11.5, fontWeight: 700,
-      letterSpacing: '.01em', flexShrink: 0,
+    <div style={{
+      minWidth: 30, height: 30, padding: '0 4px', borderRadius: '50%',
+      background: 'var(--accent2, #4a6cf7)', color: '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: rollNo && String(rollNo).length > 2 ? 10 : 12, fontWeight: 700, flexShrink: 0,
     }}>
-      {rollNo || '+Roll'}
-    </span>
+      {rollNo || '—'}
+    </div>
   );
 }
 
@@ -248,10 +248,10 @@ function filterChipStyle(on) {
 
 // Round, icon-only header action (Download / Import).
 const roundIconBtn = {
-  width: 36, height: 36, borderRadius: '50%', border: 'none', padding: 0, flexShrink: 0,
-  background: '#04213A', color: '#fff', cursor: 'pointer',
+  width: 36, height: 36, borderRadius: '50%', border: '2px solid #04213A', padding: 0, flexShrink: 0,
+  background: '#fff', color: '#04213A', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  boxShadow: '0 1px 3px rgba(4,33,58,.3)',
+  boxShadow: '0 1px 3px rgba(4,33,58,.2)',
 };
 
 // Bulk-action buttons: secondary (All / None), primary (Edit / Restore), danger (Delete).

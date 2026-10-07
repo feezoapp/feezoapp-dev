@@ -1013,7 +1013,7 @@ export default function AttendanceTab() {
   const dateTitle = viewMode === 'year' ? String(year) : viewMode === 'month' ? `${MONTHS[month]} ${year}` : dateLabel;
   const markAllHint = (!sportFilter || !batchFilter) ? 'Pick a specific sport and batch to use Mark All' : undefined;
   const checkLabelStyle = (on, accent) => ({
-    flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, height: 30, padding: '0 4px', borderRadius: 8, whiteSpace: 'nowrap',
+    flex: 'none', width: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, height: 34, padding: 0, borderRadius: 9, whiteSpace: 'nowrap', boxSizing: 'border-box',
     border: `1px solid ${on ? accent : 'var(--border)'}`, background: on ? `${accent}14` : 'var(--card)',
     color: on ? accent : '#1A336A', fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'background-color .15s ease, border-color .15s ease',
   });
@@ -1225,7 +1225,7 @@ export default function AttendanceTab() {
 
       {/* Summary — always visible, doesn't hide on scroll */}
       {viewMode === 'day' ? (
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', marginBottom: 6, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 1px 2px rgba(16,32,64,.05)' }}>
+        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '4px 11px 4px 10px', marginBottom: 6, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 1px 2px rgba(16,32,64,.05)' }}>
           {/* Summary tiles — left */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, padding: '0 2px' }}>
             {statTile('checkCircle', presentCount, 'Present', '#1A336A')}
@@ -1234,12 +1234,12 @@ export default function AttendanceTab() {
           </div>
           {/* All Present / All Absent — right, same line */}
           {!isFutureDate && (
-            <div style={{ display: 'flex', gap: 5, flex: '1 1 0', minWidth: 0 }}>
+            <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexShrink: 0 }}>
               <label className="at-check" style={checkLabelStyle(allPChecked, '#1A336A')} title={markAllHint || 'Mark all Present'}>
-                <input type="checkbox" checked={allPChecked} onChange={() => markAll('P')} aria-label="All Present" style={{ width: 13, height: 13, margin: 0, accentColor: '#1A336A', cursor: 'pointer', flexShrink: 0 }} /> All P
+                <input type="checkbox" checked={allPChecked} onChange={() => markAll('P')} aria-label="All Present" style={{ width: 13, height: 13, margin: 0, accentColor: '#1A336A', cursor: 'pointer', flexShrink: 0 }} /> P
               </label>
               <label className="at-check" style={checkLabelStyle(allAChecked, '#DC2626')} title={markAllHint || 'Mark all Absent'}>
-                <input type="checkbox" checked={allAChecked} onChange={() => markAll('A')} aria-label="All Absent" style={{ width: 13, height: 13, margin: 0, accentColor: '#DC2626', cursor: 'pointer', flexShrink: 0 }} /> All A
+                <input type="checkbox" checked={allAChecked} onChange={() => markAll('A')} aria-label="All Absent" style={{ width: 13, height: 13, margin: 0, accentColor: '#DC2626', cursor: 'pointer', flexShrink: 0 }} /> A
               </label>
             </div>
           )}
