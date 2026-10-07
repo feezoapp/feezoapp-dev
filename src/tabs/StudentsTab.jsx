@@ -158,13 +158,13 @@ function RadioRow({ name, checked, onChange, label }) {
 function countPillStyle(active, tone) {
   if (tone === 'red') {
     return {
-      fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 20, cursor: 'pointer', border: 'none',
+      fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, cursor: 'pointer', border: 'none', lineHeight: 1.3,
       background: active ? '#ef4444' : 'rgba(220,38,38,.12)', color: active ? '#fff' : '#ef4444',
       whiteSpace: 'nowrap',
     };
   }
   return {
-    fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 20, cursor: 'pointer', border: 'none',
+    fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, cursor: 'pointer', border: 'none', lineHeight: 1.3,
     background: active ? '#1A336A' : 'var(--card2)', color: active ? '#fff' : 'var(--gray)',
     whiteSpace: 'nowrap',
   };
@@ -176,6 +176,14 @@ const filterChipStyle = {
   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0,
   fontSize: 11, fontWeight: 700, padding: '8px 6px', borderRadius: 11,
   border: '1px solid var(--border)', background: 'var(--card2)', color: '#1A336A', cursor: 'pointer',
+};
+
+// Round, icon-only action button (filled navy circle with a white icon).
+const roundIconBtn = {
+  width: 34, height: 34, borderRadius: '50%', border: 'none', padding: 0, flexShrink: 0,
+  background: '#04213A', color: '#fff', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  boxShadow: '0 2px 6px rgba(4,33,58,.28)',
 };
 
 export default function StudentsTab() {
@@ -353,8 +361,8 @@ export default function StudentsTab() {
             <span style={{ fontSize: 15, fontWeight: 800, color: '#1A336A' }}>Students</span>
           </div>
           <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'nowrap' }}>
-            {canExportStudents && <button className="btn btn-gold btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700 }} onClick={() => setShowDownload(true)}><TrayIcon /> Download</button>}
-            {canImportStudents && <button className="btn btn-outline btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 10.5, borderRadius: 8, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => setShowImport(true)}><TrayIcon up /> Import</button>}
+            {canExportStudents && <button aria-label="Download" title="Download" style={roundIconBtn} onClick={() => setShowDownload(true)}><TrayIcon size={18} /></button>}
+            {canImportStudents && <button aria-label="Import" title="Import" style={roundIconBtn} onClick={() => setShowImport(true)}><TrayIcon up size={18} /></button>}
           </div>
         </div>
 
