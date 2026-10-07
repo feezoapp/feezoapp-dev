@@ -6,6 +6,25 @@ import { buildBatchKey } from '../lib/batchKey';
 import { usePlan } from '../context/PlanContext';
 import { useAuth } from '../context/AuthContext';
 
+// Outline icons used by this popup (Lucide-style, round caps, one stroke weight).
+const ICONS = {
+  upload: <><path d="M12 15V3" /><path d="m7 8 5-5 5 5" /><path d="M4 17v3h16v-3" /></>,
+  x: <><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>,
+  download: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M4 17v3h16v-3" /></>,
+  sheet: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6" /><path d="M8 13h2" /><path d="M14 13h2" /><path d="M8 17h2" /><path d="M14 17h2" /></>,
+  alert: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></>,
+};
+
+function Icon({ name, size = 18, stroke = 2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+      style={{ flexShrink: 0, display: 'block' }}>
+      {ICONS[name]}
+    </svg>
+  );
+}
+
 const HEADER_MAP = {
   name: 'name', studentname: 'name', fullname: 'name',
   rollno: 'rollNo', roll: 'rollNo', rollnumber: 'rollNo', sno: 'rollNo', no: 'rollNo',
@@ -123,6 +142,7 @@ export default function ImportStudentsModal({ academyId, sports, batches, existi
   const [rejected, setRejected] = useState([]);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [fileName, setFileName] = useState(''); // display only — name of the chosen file
 
   const downloadTemplate = () => {
     const headers = ['Name', 'RollNo', 'Sport', 'Batch', 'DOB', 'Gender', 'Height', 'Weight', 'Parent', 'Contact', 'Contact2', 'School', 'JoinDate'];
@@ -583,70 +603,122 @@ export default function ImportStudentsModal({ academyId, sports, batches, existi
     onClose();
   };
 
+  const rowChip = (color) => ({ flexShrink: 0, fontWeight: 600, fontSize: 11.5, color });
+
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,40,.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
-      <div style={{ background: 'var(--card)', width: '100%', maxWidth: 480, maxHeight: '85vh', borderRadius: 14, margin: '0 auto', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow)', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 18px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--card2)' }}>
-          <div style={{ fontWeight: 800, fontSize: 16 }}>⬆️ Import Students</div>
-          <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--card)', border: '1px solid var(--border)', cursor: 'pointer' }}>✕</button>
+    <div className="im-overlay" role="dialog" aria-modal="true" aria-label="Import Students" style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,40,.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <style>{`
+        .im-overlay{animation:im-fade .15s ease}
+        .im-sheet{animation:im-pop .16s ease}
+        @keyframes im-fade{from{opacity:0}to{opacity:1}}
+        @keyframes im-pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+        .im-btn{transition:transform .12s ease,background-color .15s ease,border-color .15s ease}
+        .im-btn:active:not(:disabled){transform:scale(.97)}
+        .im-btn:focus-visible,.im-drop:focus-within{outline:2px solid #5B7CC4;outline-offset:2px}
+        .im-drop{transition:border-color .15s ease,background-color .15s ease}
+        .im-drop:hover{border-color:#5B7CC4;background:rgba(91,124,196,.06)}
+        @media (prefers-reduced-motion:reduce){.im-overlay,.im-sheet,.im-btn,.im-drop{animation:none !important;transition:none !important}}
+      `}</style>
+      <div className="im-sheet" style={{ background: 'var(--card)', width: '100%', maxWidth: 480, maxHeight: '85vh', borderRadius: 16, margin: '0 auto', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow)', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px 12px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--card2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(91,124,196,.14)', color: '#1A336A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="upload" size={18} />
+            </span>
+            <span style={{ fontWeight: 700, fontSize: 16, color: '#1A336A' }}>Import Students</span>
+          </div>
+          <button className="im-btn" onClick={onClose} aria-label="Close" style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--gray)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="x" size={16} />
+          </button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <button className="btn btn-outline btn-sm" onClick={downloadTemplate}>📥 Download Template</button>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button
+            className="im-btn"
+            onClick={downloadTemplate}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 40, borderRadius: 10, border: '1px solid #C5D0EA', background: '#fff', color: '#1A336A', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            <Icon name="download" size={16} /> Download Template
+          </button>
 
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)', display: 'block', marginBottom: 6 }}>Choose file (.csv, .xlsx, .xls)</label>
-            <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="form-input" />
+            <label htmlFor="im-file" style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray)', display: 'block', marginBottom: 6 }}>Choose file (.csv, .xlsx, .xls)</label>
+            <label className="im-drop" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 64, padding: '12px 14px', border: '1.5px dashed #B4BED3', borderRadius: 12, background: 'var(--card2)', cursor: 'pointer', textAlign: 'center' }}>
+              <input
+                id="im-file"
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => { setFileName(e.target.files?.[0]?.name || ''); handleFile(e); }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+              />
+              <span style={{ display: 'flex', color: '#1A336A' }}><Icon name={fileName ? 'sheet' : 'upload'} size={22} stroke={1.75} /></span>
+              <span style={{ minWidth: 0, textAlign: 'left' }}>
+                <span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: '#1A336A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {fileName || 'Tap to choose a file'}
+                </span>
+                <span style={{ display: 'block', fontSize: 11.5, color: 'var(--gray)' }}>
+                  {fileName ? 'Tap to choose a different file' : 'CSV or Excel spreadsheet'}
+                </span>
+              </span>
+            </label>
           </div>
 
-          {error && <div style={{ fontSize: 12.5, color: '#dc2626', background: 'rgba(220,38,38,.08)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 8, padding: '8px 10px', whiteSpace: 'pre-line' }}>⚠️ {error}</div>}
+          {error && (
+            <div role="alert" style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12.5, color: '#dc2626', background: 'rgba(220,38,38,.07)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 10, padding: '9px 10px', whiteSpace: 'pre-line' }}>
+              <span style={{ display: 'flex', marginTop: 1 }}><Icon name="alert" size={16} /></span>
+              <span style={{ minWidth: 0 }}>{error}</span>
+            </div>
+          )}
 
           {rows && (
             <>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <div className="card" style={{ flex: 1, padding: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: 10.5, color: 'var(--gray)' }}>New</div>
-                  <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--green, #16a34a)' }}>{newStudentCount}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 6 }}>
+                <div className="card" style={{ padding: '8px 4px', textAlign: 'center', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>New</div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--green, #16a34a)' }}>{newStudentCount}</div>
                   {inserts.length !== newStudentCount && (
                     <div style={{ fontSize: 9.5, color: 'var(--gray)' }}>{inserts.length} enrollments</div>
                   )}
                 </div>
-                <div className="card" style={{ flex: 1, padding: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: 10.5, color: 'var(--gray)' }}>Update</div>
-                  <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--accent2)' }}>{updates.length}</div>
+                <div className="card" style={{ padding: '8px 4px', textAlign: 'center', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>Update</div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--accent2)' }}>{updates.length}</div>
                 </div>
-                <div className="card" style={{ flex: 1, padding: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: 10.5, color: 'var(--gray)' }}>Skip</div>
-                  <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--gray)' }}>{skipped.length}</div>
+                <div className="card" style={{ padding: '8px 4px', textAlign: 'center', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>Skip</div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--gray)' }}>{skipped.length}</div>
                 </div>
-                <div className="card" style={{ flex: 1, padding: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: 10.5, color: 'var(--gray)' }}>Rejected</div>
-                  <div style={{ fontWeight: 800, fontSize: 17, color: '#dc2626' }}>{rejected.length}</div>
+                <div className="card" style={{ padding: '8px 4px', textAlign: 'center', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>Rejected</div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: '#dc2626' }}>{rejected.length}</div>
                 </div>
               </div>
 
               {rejected.length > 0 && (
-                <button className="btn btn-outline btn-sm" onClick={downloadRejected} style={{ alignSelf: 'flex-start' }}>
-                  ⬇️ Export Rejected ({rejected.length}) to fix & re-upload
+                <button
+                  className="im-btn"
+                  onClick={downloadRejected}
+                  style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 12px', borderRadius: 9, border: '1px solid #C5D0EA', background: '#fff', color: '#1A336A', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  <Icon name="download" size={14} /> Export Rejected ({rejected.length}) to fix & re-upload
                 </button>
               )}
 
               <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {rows.map((r, i) => (
-                  <div key={i} className="card" style={{ padding: 10, fontSize: 12.5 }}>
-                    <strong>{r.name}</strong> · {r.rollNo} · {r.sport}/{r.batchLabel}{r.gender ? ` · ${r.gender}` : ''}{r.height ? ` · ${r.height}cm` : ''}{r.weight ? ` · ${r.weight}kg` : ''}{r.bmi ? ` · BMI ${r.bmi}` : ''}
-                    <span style={{
-                      float: 'right', fontWeight: 700,
-                      color: r._noChanges ? 'var(--gray)' : r._match ? 'var(--accent2)' : 'var(--green, #16a34a)',
-                    }}>
+                  <div key={i} className="card" style={{ padding: '8px 10px', fontSize: 12.5, borderRadius: 10, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <strong style={{ fontWeight: 600 }}>{r.name}</strong> · {r.rollNo} · {r.sport}/{r.batchLabel}{r.gender ? ` · ${r.gender}` : ''}{r.height ? ` · ${r.height}cm` : ''}{r.weight ? ` · ${r.weight}kg` : ''}{r.bmi ? ` · BMI ${r.bmi}` : ''}
+                    </div>
+                    <span style={rowChip(r._noChanges ? 'var(--gray)' : r._match ? 'var(--accent2)' : 'var(--green, #16a34a)')}>
                       {r._noChanges ? 'Skip' : r._match ? 'Update' : (r._newGroupId !== null && !r._isGroupPrimary ? 'New · +enrollment' : 'New')}
                     </span>
                   </div>
                 ))}
                 {rejected.map((r, i) => (
-                  <div key={'r' + i} className="card" style={{ padding: 10, fontSize: 12.5, opacity: .7 }}>
-                    <strong>{r.label}</strong> — {r.reason}
-                    <span style={{ float: 'right', fontWeight: 700, color: '#dc2626' }}>Skipped</span>
+                  <div key={'r' + i} className="card" style={{ padding: '8px 10px', fontSize: 12.5, opacity: .75, borderRadius: 10, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                    <div style={{ minWidth: 0 }}><strong style={{ fontWeight: 600 }}>{r.label}</strong> — {r.reason}</div>
+                    <span style={rowChip('#dc2626')}>Skipped</span>
                   </div>
                 ))}
               </div>
@@ -655,9 +727,9 @@ export default function ImportStudentsModal({ academyId, sports, batches, existi
         </div>
 
         {rows && (inserts.length > 0 || updates.length > 0) && (
-          <div style={{ display: 'flex', gap: 10, padding: 16, borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--card2)' }}>
-            <button className="btn btn-outline" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
-            <button className="btn btn-primary" style={{ flex: 1.4 }} onClick={submit} disabled={submitting}>
+          <div style={{ display: 'flex', gap: 10, padding: 14, borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--card2)' }}>
+            <button className="btn btn-outline im-btn" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+            <button className="btn btn-primary im-btn" style={{ flex: 1.4 }} onClick={submit} disabled={submitting}>
               {submitting ? 'Importing…' : `Import ${newStudentCount + updates.length} Students`}
             </button>
           </div>
