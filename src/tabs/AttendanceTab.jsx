@@ -33,6 +33,7 @@ const ICONS = {
   unlock: <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></>,
   info: <><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></>,
   umbrella: <><path d="M22 12a10.06 10.06 1 0 0-20 0Z" /><path d="M12 12v8a2 2 0 0 0 4 0" /><path d="M12 2v1" /></>,
+  filter: <path d="M22 3H2l8 9.46V19l4 2v-8.54Z" />,
 };
 
 function Icon({ name, size = 18, stroke = 2 }) {
@@ -51,6 +52,7 @@ const ATTENDANCE_CSS = `
 .at-btn:active:not(:disabled){transform:scale(.96)}
 .at-btn:focus-visible,.at-card:focus-visible,.at-check:focus-within{outline:2px solid #5B7CC4;outline-offset:2px}
 .at-chip:hover{border-color:#9DB2DD}
+.at-round:hover:not(:disabled){background:#0B3358}
 .at-search{transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
 .at-search:focus{border-color:#5B7CC4 !important;box-shadow:0 0 0 3px rgba(91,124,196,.18);background:#fff !important}
 .at-panel{animation:at-pop .16s ease}
@@ -74,19 +76,20 @@ const ATTENDANCE_CSS = `
 function chipStyle(on) {
   return {
     flex: '1 1 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0,
-    height: 34, fontSize: 11.5, fontWeight: 600, padding: '0 6px', borderRadius: 10, fontFamily: 'inherit',
+    height: 36, fontSize: 12, fontWeight: 600, padding: '0 8px', borderRadius: 10, fontFamily: 'inherit',
     border: `1px solid ${on ? '#5B7CC4' : 'var(--border)'}`,
     background: on ? 'rgba(91,124,196,.10)' : 'var(--card2)', color: '#1A336A', cursor: 'pointer',
   };
 }
 
-// Header action buttons (PDF / Excel / Import).
+// Header action buttons (PDF / Excel / Import) — identical to the Students
+// tab's `roundIconBtn` (36px solid-navy circle, white icon, same shadow).
 function actionBtnStyle(disabled) {
   return {
-    display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 10px', borderRadius: 10,
-    border: '1px solid #C5D0EA', background: '#fff', color: '#1A336A', fontSize: 12, fontWeight: 600,
-    fontFamily: 'inherit', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1,
-    boxShadow: '0 1px 2px rgba(16,32,64,.06)', whiteSpace: 'nowrap',
+    width: 36, height: 36, borderRadius: '50%', border: 'none', padding: 0, flexShrink: 0,
+    background: '#04213A', color: '#fff', cursor: disabled ? 'not-allowed' : 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    boxShadow: '0 1px 3px rgba(4,33,58,.3)', opacity: disabled ? 0.5 : 1,
   };
 }
 
@@ -1008,7 +1011,7 @@ export default function AttendanceTab() {
   const dateTitle = viewMode === 'year' ? String(year) : viewMode === 'month' ? `${MONTHS[month]} ${year}` : dateLabel;
   const markAllHint = (!sportFilter || !batchFilter) ? 'Pick a specific sport and batch to use Mark All' : undefined;
   const checkLabelStyle = (on, accent) => ({
-    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 36, borderRadius: 10,
+    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 34, borderRadius: 10,
     border: `1px solid ${on ? accent : 'var(--border)'}`, background: on ? `${accent}14` : 'var(--card)',
     color: on ? accent : '#1A336A', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', transition: 'background-color .15s ease, border-color .15s ease',
   });
@@ -1026,44 +1029,36 @@ export default function AttendanceTab() {
       <style>{ATTENDANCE_CSS}</style>
 
       {/* Header: title + PDF / Excel / Import */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1A336A' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1A336A', minWidth: 0 }}>
           <Icon name="calendarCheck" size={20} />
           <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-.01em' }}>Attendance</span>
         </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
           {canExportAttendance && hasFeature('has_reports') && (
             <>
-              <button className="at-btn" style={actionBtnStyle(false)} onClick={() => doExport('pdf')} aria-label="Export PDF"><Icon name="fileText" size={15} /> PDF</button>
-              <button className="at-btn" style={actionBtnStyle(false)} onClick={() => doExport('xlsx')} aria-label="Export Excel"><Icon name="sheet" size={15} /> Excel</button>
+              <button className="at-btn at-round" style={actionBtnStyle(false)} onClick={() => doExport('pdf')} aria-label="Export PDF" title="Export PDF"><Icon name="fileText" size={17} /></button>
+              <button className="at-btn at-round" style={actionBtnStyle(false)} onClick={() => doExport('xlsx')} aria-label="Export Excel" title="Export Excel"><Icon name="sheet" size={17} /></button>
             </>
           )}
           {canExportAttendance && !hasFeature('has_reports') && (() => {
             const target = cheapestPlanWithFeature('has_reports');
+            const msg = target ? `Upgrade to ${target.name} to unlock exports` : 'Exports not available on your plan';
             return (
-              <button
-                className="at-btn"
-                style={actionBtnStyle(true)}
-                disabled
-                title={target ? `Upgrade to ${target.name} to unlock exports` : 'Not available on your plan'}
-              >
-                <Icon name="lock" size={14} /> PDF / Excel
+              <button className="at-btn at-round" style={actionBtnStyle(true)} disabled aria-label={msg} title={msg}>
+                <Icon name="lock" size={16} />
               </button>
             );
           })()}
           {canImportAttendance && hasFeature('has_bulk_import') && (
-            <button className="at-btn" style={actionBtnStyle(false)} onClick={() => setShowImport(true)} aria-label="Import attendance"><Icon name="upload" size={15} /> Import</button>
+            <button className="at-btn at-round" style={actionBtnStyle(false)} onClick={() => setShowImport(true)} aria-label="Import attendance" title="Import attendance"><Icon name="upload" size={17} /></button>
           )}
           {canImportAttendance && !hasFeature('has_bulk_import') && (() => {
             const target = cheapestPlanWithFeature('has_bulk_import');
+            const msg = target ? `Upgrade to ${target.name} to unlock bulk import` : 'Import not available on your plan';
             return (
-              <button
-                className="at-btn"
-                style={actionBtnStyle(true)}
-                disabled
-                title={target ? `Upgrade to ${target.name} to unlock bulk import` : 'Not available on your plan'}
-              >
-                <Icon name="lock" size={14} /> Import
+              <button className="at-btn at-round" style={actionBtnStyle(true)} disabled aria-label={msg} title={msg}>
+                <Icon name="lock" size={16} />
               </button>
             );
           })()}
@@ -1072,11 +1067,11 @@ export default function AttendanceTab() {
 
       {/* Date navigator — header row always visible; filters, date arrows and
           view-mode buttons live in the collapsible panel (panelOpen). */}
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '8px 10px', marginBottom: 6, boxShadow: '0 1px 2px rgba(16,32,64,.05)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: 32 }}
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 10px', marginBottom: 6, boxShadow: '0 1px 2px rgba(16,32,64,.05)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: 36 }}
           onClick={() => setPanelOpen(p => !p)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <span style={{ display: 'flex', color: '#1A336A' }}><Icon name="calendar" size={18} /></span>
+            <span style={{ display: 'flex', color: '#1A336A' }} title="Select date" aria-label="Select date"><Icon name="calendar" size={18} /></span>
             <span style={{ fontWeight: 600, fontSize: 14, color: '#182238', whiteSpace: 'nowrap' }}>{dateTitle}</span>
             <span style={{ fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 7, background: 'rgba(91,124,196,.14)', color: '#1A336A', textTransform: 'capitalize' }}>{viewMode}</span>
           </div>
@@ -1090,23 +1085,24 @@ export default function AttendanceTab() {
         {panelOpen && (
           <div className="at-panel" style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {/* Sport | Batch | Status | Sort */}
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="at-btn at-chip" style={chipStyle(!!sportFilter)} onClick={() => setPopup('sport')} aria-haspopup="dialog" aria-label="Filter by sport">
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sportFilter || 'All Sports'}</span>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <span style={{ display: 'flex', color: '#5B7CC4', flexShrink: 0, padding: '0 2px' }} aria-hidden="true"><Icon name="filter" size={16} /></span>
+              <button className="at-btn at-chip" style={chipStyle(!!sportFilter)} onClick={() => setPopup('sport')} aria-haspopup="dialog" aria-label="Filter by sport" title="Filter by sport">
+                <span style={{ whiteSpace: 'nowrap' }}>{sportFilter || 'Sport'}</span>
                 <Icon name="chevronDown" size={13} />
               </button>
-              <button className="at-btn at-chip" style={chipStyle(!!batchFilter)} onClick={() => setPopup('batch')} aria-haspopup="dialog" aria-label="Filter by batch">
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{batchFilter || 'All Batches'}</span>
+              <button className="at-btn at-chip" style={chipStyle(!!batchFilter)} onClick={() => setPopup('batch')} aria-haspopup="dialog" aria-label="Filter by batch" title="Filter by batch">
+                <span style={{ whiteSpace: 'nowrap' }}>{batchFilter || 'Batch'}</span>
                 <Icon name="chevronDown" size={13} />
               </button>
               {viewMode === 'day' && (
                 <button className="at-btn at-chip" style={chipStyle(statusFilter !== 'all')} onClick={() => setPopup('status')} aria-haspopup="dialog" aria-label="Filter by status">
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{statusFilter === 'all' ? 'Status' : statusLabel}</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{statusFilter === 'all' ? 'Status' : statusLabel}</span>
                   <Icon name="chevronDown" size={13} />
                 </button>
               )}
               <button className="at-btn at-chip" style={chipStyle(false)} onClick={() => setPopup('sort')} aria-haspopup="dialog" aria-label={`Sort by ${currentSort?.l || ''}`}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentSort?.short || 'Sort'}</span>
+                <span style={{ whiteSpace: 'nowrap' }}>{currentSort?.short || 'Sort'}</span>
                 {currentSort?.dir && <span style={{ display: 'flex', color: '#5B7CC4' }}><Icon name={currentSort.dir} size={12} stroke={2.4} /></span>}
                 <Icon name="chevronDown" size={13} />
               </button>
@@ -1234,7 +1230,7 @@ export default function AttendanceTab() {
       {/* Summary — always visible, doesn't hide on scroll */}
       {viewMode === 'day' ? (
         <div style={{ flexShrink: 0 }}>
-          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 4, padding: '8px 6px', marginBottom: 6, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 1px 2px rgba(16,32,64,.05)' }}>
+          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 4, padding: '5px 6px', marginBottom: 6, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 1px 2px rgba(16,32,64,.05)' }}>
             {statTile('checkCircle', presentCount, 'Present', '#1A336A')}
             {statTile('xCircle', absentCount, 'Absent', '#DC2626')}
             {statTile('clock', notMarkedCount, 'Pending', '#6B7385')}
@@ -1290,7 +1286,7 @@ export default function AttendanceTab() {
           const pTitle = locked ? 'Locked — register closed' : (status === 'P' ? (isAdmin ? 'Click to clear' : 'Marked Present') : (rowDone ? 'Mark as latecomer (Present)' : 'Mark Present'));
           const aTitle = locked ? 'Locked — register closed' : (status === 'A' ? (isAdmin ? 'Click to clear' : 'Marked Absent') : 'Mark Absent');
           return (
-            <div key={r.key} className="at-card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 6 }}>
+            <div key={r.key} className="at-card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', marginBottom: 5 }}>
               <RollBadge rollNo={r.student.roll_no} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, color: '#182238', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
