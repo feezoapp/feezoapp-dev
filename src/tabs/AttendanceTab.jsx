@@ -6,17 +6,107 @@ import { supabase } from '../lib/supabaseClient';
 import { exportGenericPdf, exportGenericXlsx } from '../lib/exporters';
 import ImportAttendanceModal from '../components/ImportAttendanceModal';
 
+// ---------------------------------------------------------------------------
+// Presentation-only helpers (icons, styles). No data or attendance logic here.
+// ---------------------------------------------------------------------------
+
+// Outline icons (Lucide-style, 24px grid, round caps/joins, one stroke weight).
+const ICONS = {
+  calendarCheck: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /><path d="m9 16 2 2 4-4" /></>,
+  calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></>,
+  fileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /><path d="M10 9H8" /></>,
+  sheet: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6" /><path d="M8 13h2" /><path d="M14 13h2" /><path d="M8 17h2" /><path d="M14 17h2" /></>,
+  upload: <><path d="M12 15V3" /><path d="m7 8 5-5 5 5" /><path d="M4 17v3h16v-3" /></>,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
+  chevronUp: <path d="m18 15-6-6-6 6" />,
+  chevronLeft: <path d="m15 18-6-6 6-6" />,
+  chevronRight: <path d="m9 18 6-6-6-6" />,
+  arrowUp: <><path d="M12 19V5" /><path d="m5 12 7-7 7 7" /></>,
+  arrowDown: <><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></>,
+  search: <><circle cx="11" cy="11" r="7.5" /><path d="m21 21-4.35-4.35" /></>,
+  x: <><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>,
+  checkCircle: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" /></>,
+  xCircle: <><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></>,
+  clock: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>,
+  users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>,
+  lock: <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>,
+  unlock: <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></>,
+  info: <><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></>,
+  umbrella: <><path d="M22 12a10.06 10.06 1 0 0-20 0Z" /><path d="M12 12v8a2 2 0 0 0 4 0" /><path d="M12 2v1" /></>,
+};
+
+function Icon({ name, size = 18, stroke = 2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+      style={{ flexShrink: 0, display: 'block' }}>
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+// Scoped hover / press / focus styles and small transitions. Prefixed `at-`.
+const ATTENDANCE_CSS = `
+.at-btn{transition:transform .12s ease,background-color .15s ease,border-color .15s ease,box-shadow .15s ease,opacity .15s ease,color .15s ease}
+.at-btn:active:not(:disabled){transform:scale(.96)}
+.at-btn:focus-visible,.at-card:focus-visible,.at-check:focus-within{outline:2px solid #5B7CC4;outline-offset:2px}
+.at-chip:hover{border-color:#9DB2DD}
+.at-search{transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
+.at-search:focus{border-color:#5B7CC4 !important;box-shadow:0 0 0 3px rgba(91,124,196,.18);background:#fff !important}
+.at-panel{animation:at-pop .16s ease}
+.at-overlay{animation:at-fade .15s ease}
+.at-sheet{animation:at-pop .16s ease}
+@keyframes at-fade{from{opacity:0}to{opacity:1}}
+@keyframes at-pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.at-list .at-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px rgba(16,32,64,.04);transition:border-color .15s ease,box-shadow .15s ease}
+@media (hover:hover){.at-list .at-card:hover{border-color:#B9C7E6;box-shadow:0 2px 8px rgba(16,32,64,.07)}}
+.at-pa{width:38px;height:34px;border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;border:1px solid #C5D0EA;background:#fff;color:#5B6785;display:flex;align-items:center;justify-content:center;padding:0;transition:background-color .15s ease,border-color .15s ease,color .15s ease,transform .12s ease}
+.at-pa:active{transform:scale(.94)}
+.at-pa:hover{border-color:#5B7CC4}
+.at-pa:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+.at-pa.on-p{background:#1A336A;border-color:#1A336A;color:#fff}
+.at-pa.on-late{background:#EA8A1A;border-color:#EA8A1A;color:#fff}
+.at-pa.on-a{background:#DC2626;border-color:#DC2626;color:#fff}
+@media (prefers-reduced-motion:reduce){.at-btn,.at-search,.at-panel,.at-overlay,.at-sheet,.at-card,.at-pa{animation:none !important;transition:none !important}}
+`;
+
+// Equal-size filter chip; highlighted light blue when a filter is applied.
+function chipStyle(on) {
+  return {
+    flex: '1 1 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0,
+    height: 34, fontSize: 11.5, fontWeight: 600, padding: '0 6px', borderRadius: 10, fontFamily: 'inherit',
+    border: `1px solid ${on ? '#5B7CC4' : 'var(--border)'}`,
+    background: on ? 'rgba(91,124,196,.10)' : 'var(--card2)', color: '#1A336A', cursor: 'pointer',
+  };
+}
+
+// Header action buttons (PDF / Excel / Import).
+function actionBtnStyle(disabled) {
+  return {
+    display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 10px', borderRadius: 10,
+    border: '1px solid #C5D0EA', background: '#fff', color: '#1A336A', fontSize: 12, fontWeight: 600,
+    fontFamily: 'inherit', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1,
+    boxShadow: '0 1px 2px rgba(16,32,64,.06)', whiteSpace: 'nowrap',
+  };
+}
+
+// Small square prev/next arrows beside the Day / Month / Year buttons.
+const arrowBtnStyle = {
+  width: 28, height: 30, borderRadius: 8, border: '1px solid var(--border)', background: '#fff', color: '#1A336A',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, flexShrink: 0,
+};
+
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const SORT_OPTIONS = [
-  { v: 'roll_asc', l: 'Roll No ↑' },
-  { v: 'roll_desc', l: 'Roll No ↓' },
-  { v: 'name_az', l: 'Name A→Z' },
-  { v: 'name_za', l: 'Name Z→A' },
-  { v: 'present_first', l: '✅ Present first' },
-  { v: 'absent_first', l: '❌ Absent first' },
-  { v: 'unmarked_first', l: '⏳ Unmarked first' },
+  { v: 'roll_asc', l: 'Roll No · Ascending', short: 'Roll No', dir: 'arrowUp' },
+  { v: 'roll_desc', l: 'Roll No · Descending', short: 'Roll No', dir: 'arrowDown' },
+  { v: 'name_az', l: 'Name A–Z', short: 'Name', dir: 'arrowUp' },
+  { v: 'name_za', l: 'Name Z–A', short: 'Name', dir: 'arrowDown' },
+  { v: 'present_first', l: 'Present first', short: 'Present first' },
+  { v: 'absent_first', l: 'Absent first', short: 'Absent first' },
+  { v: 'unmarked_first', l: 'Unmarked first', short: 'Unmarked first' },
 ];
 
 const STATUS_OPTIONS = [
@@ -103,25 +193,29 @@ function RollBadge({ rollNo }) {
       minWidth: 30, height: 30, padding: '0 4px', borderRadius: '50%',
       background: 'var(--accent2, #4a6cf7)', color: '#fff',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: rollNo && String(rollNo).length > 2 ? 10 : 12, fontWeight: 800, flexShrink: 0,
+      fontSize: rollNo && String(rollNo).length > 2 ? 10 : 12, fontWeight: 700, flexShrink: 0,
     }}>
       {rollNo || '—'}
     </div>
   );
 }
 
-// Same centered popup used by StudentsTab's Program/Sport/Sort filters —
-// a dark overlay + a card of radio rows, closing itself on selection.
+// Popup shell shared by the Sport / Batch / Status / Sort / Day / Month / Year
+// pickers — same look as the Students screen. Props are unchanged.
 function FilterPopup({ title, onClose, children }) {
   return (
     <div
+      className="at-overlay"
       onClick={onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 0' }}
+      role="dialog" aria-modal="true" aria-label={title}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(10,18,35,.5)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', borderRadius: 12, padding: 14, width: '85%', maxWidth: 320, maxHeight: 'min(60vh, 460px)', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 30px rgba(0,0,0,.4)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 800 }}>{title}</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--gray)', cursor: 'pointer' }}>×</button>
+      <div className="at-sheet" onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, padding: '14px 12px 10px', width: '100%', maxWidth: 320, maxHeight: 'min(68vh, 480px)', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 32px rgba(10,18,35,.24)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: 6, padding: '0 4px', flexShrink: 0 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: '#1A336A', textAlign: 'center' }}>{title}</div>
+          <button className="at-btn" onClick={onClose} aria-label="Close" style={{ position: 'absolute', right: 0, width: 28, height: 28, borderRadius: '50%', background: '#F1F3F8', border: 'none', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="x" size={15} />
+          </button>
         </div>
         <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
           {children}
@@ -133,8 +227,12 @@ function FilterPopup({ title, onClose, children }) {
 
 function RadioRow({ name, checked, onChange, label }) {
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-      <input type="radio" name={name} checked={checked} onChange={onChange} />
+    <label style={{
+      display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, minHeight: 42, padding: '8px 10px', borderRadius: 10,
+      cursor: 'pointer', margin: '2px 0', background: checked ? 'rgba(91,124,196,.12)' : 'transparent',
+      color: checked ? '#1A336A' : '#333', fontWeight: checked ? 600 : 500, transition: 'background .15s ease, color .15s ease',
+    }}>
+      <input type="radio" name={name} checked={checked} onChange={onChange} style={{ width: 18, height: 18, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' }} />
       {label}
     </label>
   );
@@ -604,7 +702,17 @@ export default function AttendanceTab() {
     }
 
     // Register still open — normal flow
-    if (existing === status) return; // tapping the same mark again is a no-op, not a clear
+    if (existing === status) {
+      // Admins only: tapping the already-selected mark clears it back to "not
+      // marked". Staff tapping it again does nothing, and closed registers
+      // never reach this point (they return above).
+      if (!isAdmin) return;
+      const ok = window.confirm(`Clear ${status === 'P' ? 'Present' : 'Absent'} mark for ${student.name}?`);
+      if (!ok) return;
+      clearStatus(row);
+      logAttendance(`${student.name} → cleared (${sp}) on ${date}`);
+      return;
+    }
     if (existing) {
       const label = (v) => (v === 'P' ? 'Present' : 'Absent');
       const ok = window.confirm(`Change ${student.name}'s attendance from ${label(existing)} to ${label(status)}?`);
@@ -612,6 +720,24 @@ export default function AttendanceTab() {
     }
     applyStatus(row, status, false);
     logAttendance(`${student.name} → ${status === 'P' ? 'Present' : 'Absent'} (${sp}) on ${date}`);
+  };
+
+  // Removes a single enrollment's mark for the selected date (same delete
+  // filter markAll uses when it clears a whole batch). Restores the on-screen
+  // mark if the delete fails so the UI never shows something the DB lacks.
+  const clearStatus = async (row) => {
+    if (!isAdmin || isRegisterClosed(row.sport, row.batchLabel)) return; // admin-only, never on a closed register
+    const prevStatus = records[row.key];
+    const prevLate = !!lateMap[row.key];
+    setRecords(p => { const n = { ...p }; delete n[row.key]; return n; });
+    setLateMap(p => { const n = { ...p }; delete n[row.key]; return n; });
+    const { error } = await supabase.from('attendance').delete()
+      .eq('academy_id', academyId).eq('date', date).eq('student_id', row.student.id).eq('sport', row.sport).eq('batch', row.batchLabel);
+    if (error) {
+      setRecords(p => ({ ...p, [row.key]: prevStatus }));
+      setLateMap(p => ({ ...p, [row.key]: prevLate }));
+      window.alert(`Couldn't clear ${row.student.name}'s attendance: ${error.message}`);
+    }
   };
 
   const applyStatus = (row, status, isLate) => {
@@ -853,9 +979,9 @@ export default function AttendanceTab() {
 
   const DateArrowGroup = ({ onPrev, onNext, children }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: '1 1 30%', minWidth: 92 }}>
-      <button className="arrow-btn" style={{ width: 24, height: 24, fontSize: 12 }} onClick={onPrev}>‹</button>
+      <button className="at-btn" style={arrowBtnStyle} onClick={onPrev} aria-label="Previous"><Icon name="chevronLeft" size={15} /></button>
       {children}
-      <button className="arrow-btn" style={{ width: 24, height: 24, fontSize: 12 }} onClick={onNext}>›</button>
+      <button className="at-btn" style={arrowBtnStyle} onClick={onNext} aria-label="Next"><Icon name="chevronRight" size={15} /></button>
     </div>
   );
 
@@ -871,116 +997,149 @@ export default function AttendanceTab() {
   if (!canViewAttendance) {
     return (
       <div className="page active" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 24, textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 10 }}>🔒</div>
+        <div style={{ display: 'flex', color: 'var(--gray)', marginBottom: 10 }}><Icon name="lock" size={32} stroke={1.75} /></div>
         <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>No access to Attendance</div>
         <div style={{ fontSize: 12.5, color: 'var(--gray)' }}>Ask an admin to grant you access to this tab.</div>
       </div>
     );
   }
 
+  const currentSort = SORT_OPTIONS.find(o => o.v === sortBy);
+  const dateTitle = viewMode === 'year' ? String(year) : viewMode === 'month' ? `${MONTHS[month]} ${year}` : dateLabel;
+  const markAllHint = (!sportFilter || !batchFilter) ? 'Pick a specific sport and batch to use Mark All' : undefined;
+  const checkLabelStyle = (on, accent) => ({
+    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 36, borderRadius: 10,
+    border: `1px solid ${on ? accent : 'var(--border)'}`, background: on ? `${accent}14` : 'var(--card)',
+    color: on ? accent : '#1A336A', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', transition: 'background-color .15s ease, border-color .15s ease',
+  });
+  const statTile = (icon, n, label, color) => (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, color, fontWeight: 700, fontSize: 16, lineHeight: 1.2 }}>
+        <Icon name={icon} size={15} /> {n}
+      </div>
+      <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>{label}</div>
+    </div>
+  );
+
   return (
-    <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-        <div className="section-title" style={{ marginBottom: 0 }}>🗓️ Attendance</div>
-        <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+    <div className="page active at-root" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'inherit' }}>
+      <style>{ATTENDANCE_CSS}</style>
+
+      {/* Header: title + PDF / Excel / Import */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1A336A' }}>
+          <Icon name="calendarCheck" size={20} />
+          <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-.01em' }}>Attendance</span>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {canExportAttendance && hasFeature('has_reports') && (
             <>
-              <button className="btn btn-gold btn-sm" style={{ padding: '5px 9px', fontSize: 11 }} onClick={() => doExport('pdf')}>PDF</button>
-              <button className="btn btn-success btn-sm" style={{ padding: '5px 9px', fontSize: 11 }} onClick={() => doExport('xlsx')}>XL</button>
+              <button className="at-btn" style={actionBtnStyle(false)} onClick={() => doExport('pdf')} aria-label="Export PDF"><Icon name="fileText" size={15} /> PDF</button>
+              <button className="at-btn" style={actionBtnStyle(false)} onClick={() => doExport('xlsx')} aria-label="Export Excel"><Icon name="sheet" size={15} /> Excel</button>
             </>
           )}
           {canExportAttendance && !hasFeature('has_reports') && (() => {
             const target = cheapestPlanWithFeature('has_reports');
             return (
               <button
-                className="btn btn-outline btn-sm"
-                style={{ padding: '5px 9px', fontSize: 11, opacity: 0.5, cursor: 'not-allowed' }}
+                className="at-btn"
+                style={actionBtnStyle(true)}
                 disabled
                 title={target ? `Upgrade to ${target.name} to unlock exports` : 'Not available on your plan'}
               >
-                PDF/XL
+                <Icon name="lock" size={14} /> PDF / Excel
               </button>
             );
           })()}
           {canImportAttendance && hasFeature('has_bulk_import') && (
-            <button className="btn btn-outline btn-sm" onClick={() => setShowImport(true)}>⬆️ Import</button>
+            <button className="at-btn" style={actionBtnStyle(false)} onClick={() => setShowImport(true)} aria-label="Import attendance"><Icon name="upload" size={15} /> Import</button>
           )}
           {canImportAttendance && !hasFeature('has_bulk_import') && (() => {
             const target = cheapestPlanWithFeature('has_bulk_import');
             return (
               <button
-                className="btn btn-outline btn-sm"
-                style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                className="at-btn"
+                style={actionBtnStyle(true)}
                 disabled
                 title={target ? `Upgrade to ${target.name} to unlock bulk import` : 'Not available on your plan'}
               >
-                ⬆️ Import
+                <Icon name="lock" size={14} /> Import
               </button>
             );
           })()}
         </div>
       </div>
 
-      {/* Date navigator — houses the Sport/Batch/Status/Sort filters plus the
-          date arrows and view-mode buttons, all folded into the collapsible
-          panel (panelOpen). The header row itself stays visible, doesn't hide
-          on scroll. Sits above the search box. */}
-      <div className="card" style={{ padding: 10, marginBottom: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+      {/* Date navigator — header row always visible; filters, date arrows and
+          view-mode buttons live in the collapsible panel (panelOpen). */}
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '8px 10px', marginBottom: 6, boxShadow: '0 1px 2px rgba(16,32,64,.05)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: 32 }}
           onClick={() => setPanelOpen(p => !p)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontWeight: 700, fontSize: 13.5 }}>🗓️ {viewMode === 'year' ? year : viewMode === 'month' ? `${MONTHS[month]} ${year}` : dateLabel}</span>
-            <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 12, background: 'var(--accent2)', color: '#fff', textTransform: 'capitalize' }}>{viewMode}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <span style={{ display: 'flex', color: '#1A336A' }}><Icon name="calendar" size={18} /></span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: '#182238', whiteSpace: 'nowrap' }}>{dateTitle}</span>
+            <span style={{ fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 7, background: 'rgba(91,124,196,.14)', color: '#1A336A', textTransform: 'capitalize' }}>{viewMode}</span>
           </div>
-          <button className="arrow-btn" style={{ width: 24, height: 24, fontSize: 11 }}
+          <button className="at-btn" style={{ ...arrowBtnStyle, border: 'none', background: 'var(--card2)', borderRadius: '50%', width: 28 }}
+            aria-label={panelOpen ? 'Collapse date and filter options' : 'Expand date and filter options'} aria-expanded={panelOpen}
             onClick={(e) => { e.stopPropagation(); setPanelOpen(p => !p); }}>
-            {panelOpen ? '▲' : '▼'}
+            <Icon name={panelOpen ? 'chevronUp' : 'chevronDown'} size={16} />
           </button>
         </div>
 
         {panelOpen && (
-          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {/* Sport | Batch | Status | Sort — button + popup style, matching StudentsTab */}
+          <div className="at-panel" style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Sport | Batch | Status | Sort */}
             <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('sport')}>
-                {sportFilter || 'All Sports'}
+              <button className="at-btn at-chip" style={chipStyle(!!sportFilter)} onClick={() => setPopup('sport')} aria-haspopup="dialog" aria-label="Filter by sport">
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sportFilter || 'All Sports'}</span>
+                <Icon name="chevronDown" size={13} />
               </button>
-              <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('batch')}>
-                {batchFilter || 'All Batches'}
+              <button className="at-btn at-chip" style={chipStyle(!!batchFilter)} onClick={() => setPopup('batch')} aria-haspopup="dialog" aria-label="Filter by batch">
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{batchFilter || 'All Batches'}</span>
+                <Icon name="chevronDown" size={13} />
               </button>
               {viewMode === 'day' && (
-                <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('status')}>
-                  {statusFilter === 'all' ? 'Status' : statusLabel}
+                <button className="at-btn at-chip" style={chipStyle(statusFilter !== 'all')} onClick={() => setPopup('status')} aria-haspopup="dialog" aria-label="Filter by status">
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{statusFilter === 'all' ? 'Status' : statusLabel}</span>
+                  <Icon name="chevronDown" size={13} />
                 </button>
               )}
-              <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('sort')}>
-                {sortLabel || 'Sort'}
+              <button className="at-btn at-chip" style={chipStyle(false)} onClick={() => setPopup('sort')} aria-haspopup="dialog" aria-label={`Sort by ${currentSort?.l || ''}`}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentSort?.short || 'Sort'}</span>
+                {currentSort?.dir && <span style={{ display: 'flex', color: '#5B7CC4' }}><Icon name={currentSort.dir} size={12} stroke={2.4} /></span>}
+                <Icon name="chevronDown" size={13} />
               </button>
             </div>
 
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <DateArrowGroup onPrev={() => shiftDay(-1)} onNext={() => shiftDay(1)}>
-                <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 11, padding: '5px 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('day')}>
-                  {day} {WEEKDAYS[dateObj.getDay()]}
+                <button className="at-btn at-chip" style={{ ...chipStyle(false), height: 30, borderRadius: 8 }} onClick={() => setPopup('day')} aria-label="Select day">
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{day} {WEEKDAYS[dateObj.getDay()]}</span>
                 </button>
               </DateArrowGroup>
               <DateArrowGroup onPrev={() => shiftMonth(-1)} onNext={() => shiftMonth(1)}>
-                <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 11, padding: '5px 4px' }} onClick={() => setPopup('month')}>
+                <button className="at-btn at-chip" style={{ ...chipStyle(false), height: 30, borderRadius: 8 }} onClick={() => setPopup('month')} aria-label="Select month">
                   {MONTHS[month]}
                 </button>
               </DateArrowGroup>
               <DateArrowGroup onPrev={() => shiftYear(-1)} onNext={() => shiftYear(1)}>
-                <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 11, padding: '5px 4px' }} onClick={() => setPopup('year')}>
+                <button className="at-btn at-chip" style={{ ...chipStyle(false), height: 30, borderRadius: 8 }} onClick={() => setPopup('year')} aria-label="Select year">
                   {year}
                 </button>
               </DateArrowGroup>
             </div>
 
-            <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+            {/* View mode — segmented control */}
+            <div role="group" aria-label="View mode" style={{ display: 'flex', gap: 3, padding: 3, borderRadius: 11, background: 'var(--card2)', border: '1px solid var(--border)' }}>
               {['day', 'month', 'year'].map(m => (
-                <button key={m} className={'freq-day-btn' + (viewMode === m ? ' active' : '')}
-                  style={{ flex: 1 }} onClick={() => setViewMode(m)}>
-                  🗓️ {m[0].toUpperCase() + m.slice(1)}
+                <button key={m} className="at-btn" aria-pressed={viewMode === m}
+                  style={{
+                    flex: 1, height: 30, borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
+                    background: viewMode === m ? '#1A336A' : 'transparent', color: viewMode === m ? '#fff' : '#1A336A',
+                  }}
+                  onClick={() => setViewMode(m)}>
+                  {m[0].toUpperCase() + m.slice(1)}
                 </button>
               ))}
             </div>
@@ -1047,56 +1206,78 @@ export default function AttendanceTab() {
       )}
 
       {/* Search box — always visible, never hides on scroll */}
-      <div className="search-wrap" style={{ marginBottom: 7 }}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-        <input type="text" className="search-input" placeholder="Search by name or roll number…"
-          value={search} onChange={e => setSearch(e.target.value)} />
-        {search && <button type="button" className="search-clear-btn" onClick={() => setSearch('')} aria-label="Clear search">✕</button>}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 6, flexShrink: 0 }}>
+        <span style={{ position: 'absolute', left: 12, display: 'flex', color: 'var(--gray)', pointerEvents: 'none' }}>
+          <Icon name="search" size={16} />
+        </span>
+        <input
+          type="text"
+          className="at-search"
+          placeholder="Search by name or roll number..."
+          aria-label="Search students by name or roll number"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{
+            width: '100%', height: 38, padding: '0 38px 0 36px', boxSizing: 'border-box', borderRadius: 10,
+            border: '1px solid var(--border)', background: 'var(--card2)', fontSize: 13.5, fontWeight: 400,
+            color: '#182238', outline: 'none', fontFamily: 'inherit',
+          }}
+        />
+        {search && (
+          <button type="button" className="at-btn" onClick={() => setSearch('')} aria-label="Clear search"
+            style={{ position: 'absolute', right: 7, width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'var(--border)', color: 'var(--gray)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="x" size={13} stroke={2.4} />
+          </button>
+        )}
       </div>
 
-      {/* Summary row — always visible, doesn't hide on scroll */}
+      {/* Summary — always visible, doesn't hide on scroll */}
       {viewMode === 'day' ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8, fontSize: 12.5 }}>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <span style={{ color: '#4ade80', fontWeight: 700 }}>✅ {presentCount}</span>
-            <span style={{ color: '#f87171', fontWeight: 700 }}>❌ {absentCount}</span>
-            <span style={{ color: 'var(--gray)', fontWeight: 700 }}>⏳ {notMarkedCount}</span>
-            {!classDay && <span style={{ color: 'var(--gold)' }} title="No one marked yet — likely a holiday">🏖️</span>}
+        <div style={{ flexShrink: 0 }}>
+          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 4, padding: '8px 6px', marginBottom: 6, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 1px 2px rgba(16,32,64,.05)' }}>
+            {statTile('checkCircle', presentCount, 'Present', '#1A336A')}
+            {statTile('xCircle', absentCount, 'Absent', '#DC2626')}
+            {statTile('clock', notMarkedCount, 'Pending', '#6B7385')}
+            {statTile('users', students.length, 'Total', '#1A336A')}
+            {!classDay && (
+              <span title="No one marked yet — likely a holiday" aria-label="No one marked yet — likely a holiday"
+                style={{ position: 'absolute', top: 4, right: 6, display: 'flex', color: '#B45309' }}>
+                <Icon name="umbrella" size={13} />
+              </span>
+            )}
           </div>
           {!isFutureDate && (
-            <div style={{ display: 'flex', gap: 12, fontWeight: 600 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}
-                title={(!sportFilter || !batchFilter) ? 'Pick a specific sport and batch to use Mark All' : undefined}>
-                <input type="checkbox" checked={allPChecked} onChange={() => markAll('P')} /> All P
+            <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+              <label className="at-check" style={checkLabelStyle(allPChecked, '#1A336A')} title={markAllHint}>
+                <input type="checkbox" checked={allPChecked} onChange={() => markAll('P')} style={{ width: 17, height: 17, accentColor: '#1A336A', cursor: 'pointer' }} /> All Present
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}
-                title={(!sportFilter || !batchFilter) ? 'Pick a specific sport and batch to use Mark All' : undefined}>
-                <input type="checkbox" checked={allAChecked} onChange={() => markAll('A')} /> All A
+              <label className="at-check" style={checkLabelStyle(allAChecked, '#DC2626')} title={markAllHint}>
+                <input type="checkbox" checked={allAChecked} onChange={() => markAll('A')} style={{ width: 17, height: 17, accentColor: '#DC2626', cursor: 'pointer' }} /> All Absent
               </label>
             </div>
           )}
         </div>
       ) : (
-        <div style={{ fontSize: 12, color: 'var(--gray)', marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: 'var(--gray)', margin: '2px 2px 6px', flexShrink: 0 }}>
           {students.length} student(s) · {viewMode === 'month' ? monthClassDays : yearClassDays} class day(s) · showing {viewMode === 'month' ? `${MONTHS[month]} ${year}` : `${year}`} summary
         </div>
       )}
 
-      <div ref={listScrollRef} style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingBottom: 60, marginTop: 4, overscrollBehavior: 'contain' }} onScroll={handleScroll}>
+      <div ref={listScrollRef} className="at-list" style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingBottom: 60, marginTop: 2, overscrollBehavior: 'contain' }} onScroll={handleScroll}>
         {loading && <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 20 }}>Loading…</div>}
 
         {!loading && viewMode === 'day' && isFutureDate && (
-          <div style={{ background: '#f59e0b18', border: '1px solid #f59e0b55', borderRadius: 10, padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 18 }}>🔒</span>
-            <div style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>Future date — attendance cannot be marked yet.</div>
+          <div style={{ background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.35)', borderRadius: 12, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ display: 'flex', color: '#B45309' }}><Icon name="lock" size={18} /></span>
+            <div style={{ fontSize: 12.5, color: '#92400E', fontWeight: 600 }}>Future date — attendance cannot be marked yet.</div>
           </div>
         )}
 
         {!loading && viewMode === 'day' && !isFutureDate && dayStudents.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30 }}>No students found.</div>
+          <div style={{ textAlign: 'center', color: 'var(--gray)', fontSize: 13, padding: 30 }}>No students found.</div>
         )}
         {!loading && viewMode !== 'day' && students.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30 }}>No students found.</div>
+          <div style={{ textAlign: 'center', color: 'var(--gray)', fontSize: 13, padding: 30 }}>No students found.</div>
         )}
 
         {!loading && viewMode === 'day' && !isFutureDate && dayStudents.map(r => {
@@ -1104,27 +1285,27 @@ export default function AttendanceTab() {
           const isLate = status === 'P' && !!lateMap[r.key];
           const rowDone = !!dayStatusMap[r.sport];
           const locked = rowDone && (status === 'A' || (status === 'P' && !isLate));
-          const pClass = 'att-btn ' + (status === 'P' ? (isLate ? 'present late' : 'present') : 'inactive');
-          const aClass = 'att-btn ' + (status === 'A' ? 'absent' : 'inactive');
-          const pTitle = locked ? 'Locked — register closed' : (status === 'P' ? 'Click to clear' : (rowDone ? 'Mark as latecomer (Present)' : 'Mark Present'));
-          const aTitle = locked ? 'Locked — register closed' : (status === 'A' ? 'Click to clear' : 'Mark Absent');
+          const pClass = 'at-pa' + (status === 'P' ? (isLate ? ' on-late' : ' on-p') : '');
+          const aClass = 'at-pa' + (status === 'A' ? ' on-a' : '');
+          const pTitle = locked ? 'Locked — register closed' : (status === 'P' ? (isAdmin ? 'Click to clear' : 'Marked Present') : (rowDone ? 'Mark as latecomer (Present)' : 'Mark Present'));
+          const aTitle = locked ? 'Locked — register closed' : (status === 'A' ? (isAdmin ? 'Click to clear' : 'Marked Absent') : 'Mark Absent');
           return (
-            <div key={r.key} className="card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, marginBottom: 8 }}>
+            <div key={r.key} className="at-card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 6 }}>
               <RollBadge rollNo={r.student.roll_no} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: '#182238', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                   {r.student.name}
                   {isLate && (
-                    <span style={{ background: '#f9731622', color: '#fb923c', border: '1px solid #f9731655', borderRadius: 5, fontSize: 9, fontWeight: 800, padding: '1px 5px', marginLeft: 5 }}>LATE</span>
+                    <span style={{ background: 'rgba(234,138,26,.14)', color: '#B45309', border: '1px solid rgba(234,138,26,.4)', borderRadius: 5, fontSize: 9, fontWeight: 700, padding: '1px 5px', marginLeft: 6 }}>LATE</span>
                   )}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--gray)' }}>
+                <div style={{ fontSize: 12, fontWeight: 400, color: 'var(--gray)' }}>
                   {sportFilter ? r.batchLabel : `${r.sport} · ${r.batchLabel}`}
                 </div>
               </div>
-              <div className="att-btns">
-                <button className={pClass} title={pTitle} onClick={() => setStatus(r, 'P')}>P</button>
-                <button className={aClass} title={aTitle} onClick={() => setStatus(r, 'A')}>A</button>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button className={pClass} title={pTitle} aria-label={`Mark ${r.student.name} present`} aria-pressed={status === 'P'} onClick={() => setStatus(r, 'P')}>P</button>
+                <button className={aClass} title={aTitle} aria-label={`Mark ${r.student.name} absent`} aria-pressed={status === 'A'} onClick={() => setStatus(r, 'A')}>A</button>
               </div>
             </div>
           );
@@ -1135,16 +1316,16 @@ export default function AttendanceTab() {
           const classDays = classDaysByKey[dsKey(r.sport, r.batchLabel)] || 0;
           const pct = classDays ? Math.round((agg.present / classDays) * 100) : 0;
           return (
-            <div key={r.key} className="card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, marginBottom: 8 }}>
+            <div key={r.key} className="at-card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 6 }}>
               <RollBadge rollNo={r.student.roll_no} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{r.student.name}</div>
+                <div style={{ fontWeight: 600, fontSize: 14, color: '#182238' }}>{r.student.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--gray)' }}>
                   {sportFilter ? r.batchLabel : `${r.sport} · ${r.batchLabel}`}
                 </div>
               </div>
               <div style={{ textAlign: 'right', fontSize: 12 }}>
-                <div><span style={{ color: '#16a34a', fontWeight: 700 }}>{agg.present}P</span> · <span style={{ color: '#dc2626', fontWeight: 700 }}>{agg.absent}A</span></div>
+                <div><span style={{ color: '#1A336A', fontWeight: 700 }}>{agg.present}P</span> · <span style={{ color: '#DC2626', fontWeight: 700 }}>{agg.absent}A</span></div>
                 <div style={{ color: 'var(--gray)' }}>{pct}%</div>
               </div>
             </div>
@@ -1152,7 +1333,7 @@ export default function AttendanceTab() {
         })}
 
         {!loading && viewMode === 'year' && !yearHasData && (
-          <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30 }}>No attendance records for {year}.</div>
+          <div style={{ textAlign: 'center', color: 'var(--gray)', fontSize: 13, padding: 30 }}>No attendance records for {year}.</div>
         )}
         {!loading && viewMode === 'year' && MONTHS.map((mLabel, i) => {
           const row = yearSummary[i];
@@ -1160,17 +1341,19 @@ export default function AttendanceTab() {
           const isExpanded = expandedMonth === i;
           const sortedDates = isExpanded ? Object.keys(row.byDate).sort() : [];
           return (
-            <div key={mLabel} className="card" style={{ padding: 0, marginBottom: 8, overflow: 'hidden' }}>
+            <div key={mLabel} className="at-card" style={{ padding: 0, marginBottom: 6, overflow: 'hidden' }}>
               <div
+                role="button" tabIndex={0} aria-expanded={isExpanded}
                 onClick={() => setExpandedMonth(isExpanded ? null : i)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, cursor: 'pointer' }}>
-                <div style={{ width: 46, fontWeight: 800, color: 'var(--gold)', fontSize: 13, flexShrink: 0 }}>{mLabel}</div>
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedMonth(isExpanded ? null : i); } }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer' }}>
+                <div style={{ width: 42, fontWeight: 700, color: '#1A336A', fontSize: 13, flexShrink: 0 }}>{mLabel}</div>
                 <div style={{ flex: 1, fontSize: 12, color: 'var(--gray)' }}>{row.days.size} class day{row.days.size === 1 ? '' : 's'}</div>
-                <div style={{ display: 'flex', gap: 10, fontSize: 12, fontWeight: 700 }}>
-                  <span style={{ color: '#4ade80' }}>✅ {row.p}</span>
-                  <span style={{ color: '#f87171' }}>❌ {row.a}</span>
+                <div style={{ display: 'flex', gap: 10, fontSize: 12.5, fontWeight: 700 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#1A336A' }}><Icon name="checkCircle" size={14} /> {row.p}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#DC2626' }}><Icon name="xCircle" size={14} /> {row.a}</span>
                 </div>
-                <span style={{ fontSize: 11, color: 'var(--gray)', flexShrink: 0 }}>{isExpanded ? '▲' : '▼'}</span>
+                <span style={{ display: 'flex', color: 'var(--gray)', flexShrink: 0 }}><Icon name={isExpanded ? 'chevronUp' : 'chevronDown'} size={16} /></span>
               </div>
               {isExpanded && (
                 <div style={{ borderTop: '1px solid var(--border, #e5e5e5)' }}>
@@ -1179,11 +1362,11 @@ export default function AttendanceTab() {
                     const dObj = new Date(dISO + 'T00:00:00');
                     const label = `${dObj.getDate()} ${WEEKDAYS[dObj.getDay()]}`;
                     return (
-                      <div key={dISO} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px 8px 56px', fontSize: 12, borderTop: '1px solid var(--border, #f0f0f0)' }}>
+                      <div key={dISO} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px 8px 54px', fontSize: 12, borderTop: '1px solid var(--border, #f0f0f0)' }}>
                         <div style={{ flex: 1, color: 'var(--gray)' }}>{label}</div>
                         <div style={{ display: 'flex', gap: 10, fontWeight: 700 }}>
-                          <span style={{ color: '#4ade80' }}>✅ {d.p}</span>
-                          <span style={{ color: '#f87171' }}>❌ {d.a}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#1A336A' }}><Icon name="checkCircle" size={13} /> {d.p}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#DC2626' }}><Icon name="xCircle" size={13} /> {d.a}</span>
                         </div>
                       </div>
                     );
@@ -1196,32 +1379,33 @@ export default function AttendanceTab() {
 
         {!loading && isAdmin && viewMode === 'day' && !isFutureDate && students.length > 0 && (
           !sportFilter || !batchFilter ? (
-            <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 10, padding: '8px 10px', background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 8 }}>
-              👉 Pick a specific <b>sport</b> and <b>batch</b> above to close its register (Done) and flag latecomers.
+            <div style={{ fontSize: 12, color: 'var(--graydk)', marginTop: 10, padding: '9px 10px', background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <span style={{ display: 'flex', color: '#5B7CC4', marginTop: 1 }}><Icon name="info" size={15} /></span>
+              <span>Pick a specific <b>sport</b> and <b>batch</b> above to close its register (Done) and flag latecomers.</span>
             </div>
           ) : dayCompleted ? (
             <>
-              <button className="btn" disabled style={{ width: '100%', marginTop: 10, padding: 12, background: 'var(--card2)', color: 'var(--gray)', border: '1px solid var(--border)', cursor: 'not-allowed', fontWeight: 800 }}>
-                🔒 Register Closed
+              <button className="btn at-btn" disabled style={{ width: '100%', marginTop: 10, padding: 12, background: 'var(--card2)', color: 'var(--gray)', border: '1px solid var(--border)', cursor: 'not-allowed', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
+                <Icon name="lock" size={16} /> Register Closed
               </button>
               <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 5, padding: '0 4px' }}>
                 Closed for {sportFilter} / {batchFilter}. Marked students are locked; new Present marks show as latecomers.
               </div>
               {isAdmin && (
                 <button
-                  className="btn"
+                  className="btn at-btn"
                   onClick={unlockRegister}
                   disabled={unlocking}
-                  style={{ width: '100%', marginTop: 8, padding: 10, background: 'transparent', color: '#f87171', border: '1px solid #f8717155', fontWeight: 700, fontSize: 12 }}
+                  style={{ width: '100%', marginTop: 8, padding: 10, background: 'transparent', color: '#DC2626', border: '1px solid rgba(220,38,38,.35)', fontWeight: 600, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}
                 >
-                  {unlocking ? 'Reopening…' : '🔓 Reopen Register (requires reason)'}
+                  <Icon name="unlock" size={15} /> {unlocking ? 'Reopening…' : 'Reopen Register (requires reason)'}
                 </button>
               )}
             </>
           ) : (
             <>
-              <button className="btn btn-primary" style={{ width: '100%', marginTop: 10, padding: 12, fontWeight: 800 }} onClick={markAllDone} disabled={completing}>
-                {completing ? 'Marking…' : '✅ Done — Close Register'}
+              <button className="btn btn-primary at-btn" style={{ width: '100%', marginTop: 10, padding: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }} onClick={markAllDone} disabled={completing}>
+                <Icon name="checkCircle" size={17} /> {completing ? 'Marking…' : 'Done — Close Register'}
               </button>
               <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 5, padding: '0 4px' }}>
                 Tap P/A again to clear a mark. Closing locks in {sportFilter}'s attendance for the day.
@@ -1231,21 +1415,23 @@ export default function AttendanceTab() {
         )}
       </div>
 
+      {/* Scroll-to-bottom: jumps the list to its end (same behaviour as before) */}
       <button
+        className="at-btn"
         onClick={scrollToBottom}
         aria-label="Scroll to bottom"
         title="Scroll to bottom"
         style={{
           position: 'absolute', left: '50%', bottom: 78, transform: 'translateX(-50%)', zIndex: 20,
-          width: 34, height: 34, borderRadius: '50%', padding: 0,
-          background: 'var(--card)', color: 'var(--accent2)', border: '1px solid var(--border)',
+          width: 36, height: 36, borderRadius: '50%', padding: 0,
+          background: '#1A336A', color: '#fff', border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 2px 10px rgba(0,0,0,.18)', cursor: 'pointer',
+          boxShadow: '0 3px 10px rgba(26,51,106,.32)', cursor: 'pointer',
           opacity: showScrollArrow ? 1 : 0, pointerEvents: showScrollArrow ? 'auto' : 'none',
           transition: 'opacity .2s',
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+        <Icon name="chevronDown" size={18} stroke={2.4} />
       </button>
 
       {showImport && (
