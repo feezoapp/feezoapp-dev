@@ -897,21 +897,23 @@ export default function FeesTab() {
     return viewMode === 'year' ? row.month.slice(0, 4) === String(year) : row.month === monthKeyFor(year, month);
   };
 
-  // Fee rows for display are scoped to whatever period is on screen (current
-  // month, or the whole selected year) — same pattern AttendanceTab already
-  // uses for the `attendance` table — instead of pulling every fee row the
-  // academy has ever recorded.
   // Collapse the filters card when the user taps anywhere outside it.
   // Skipped while a picker popup is open (those render outside the card, and
   // choosing an option there shouldn't close the panel behind it).
   const filtersRef = useRef(null);
   useEffect(() => {
     if (!filtersOpen || popup) return;
-    const onPointerDown = (e) => {
+    // Listen for the CLICK (not pointerdown): the tapped control's own onClick
+    // runs first, and only then does the panel collapse. Collapsing on
+    // pointerdown shifted the layout under the finger, so the tap on the real
+    // target (Pay, Edit, filters...) was lost and had to be repeated.
+    // Registered on the next tick so the click that just closed a popup (or
+    // opened this panel) isn't mistaken for an outside click.
+    const onOutsideClick = (e) => {
       if (filtersRef.current && !filtersRef.current.contains(e.target)) setFiltersOpen(false);
     };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
+    const t = setTimeout(() => document.addEventListener('click', onOutsideClick), 0);
+    return () => { clearTimeout(t); document.removeEventListener('click', onOutsideClick); };
   }, [filtersOpen, popup]);
 
   // Tapping the search field while it already has text selects it all,
@@ -920,6 +922,10 @@ export default function FeesTab() {
     if (e.target.value) e.target.select();
   };
 
+  // Fee rows for display are scoped to whatever period is on screen (current
+  // month, or the whole selected year) — same pattern AttendanceTab already
+  // uses for the `attendance` table — instead of pulling every fee row the
+  // academy has ever recorded.
   const loadFees = async () => {
     if (!academyId) return;
     let q = supabase.from('fees').select('*').eq('academy_id', academyId);

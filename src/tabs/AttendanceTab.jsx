@@ -320,11 +320,17 @@ export default function AttendanceTab() {
   const panelRef = useRef(null);
   useEffect(() => {
     if (!panelOpen || popup) return;
-    const onPointerDown = (e) => {
+    // Listen for the CLICK (not pointerdown): the tapped control's own onClick
+    // runs first, and only then does the panel collapse. Collapsing on
+    // pointerdown shifted the layout under the finger, so the tap on the real
+    // target (Pay, Edit, filters...) was lost and had to be repeated.
+    // Registered on the next tick so the click that just closed a popup (or
+    // opened this panel) isn't mistaken for an outside click.
+    const onOutsideClick = (e) => {
       if (panelRef.current && !panelRef.current.contains(e.target)) setPanelOpen(false);
     };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
+    const t = setTimeout(() => document.addEventListener('click', onOutsideClick), 0);
+    return () => { clearTimeout(t); document.removeEventListener('click', onOutsideClick); };
   }, [panelOpen, popup]);
 
   // Tapping the search field while it already has text selects it all,
