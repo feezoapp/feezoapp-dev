@@ -314,6 +314,19 @@ export default function AttendanceTab() {
 
   useEffect(() => { setExpandedMonth(null); }, [year, viewMode, sportFilter, batchFilter]);
 
+  // Collapse the date/filter panel when the user taps anywhere outside it.
+  // Skipped while a picker popup is open (those render outside the card, and
+  // choosing an option there shouldn't close the panel behind it).
+  const panelRef = useRef(null);
+  useEffect(() => {
+    if (!panelOpen || popup) return;
+    const onPointerDown = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) setPanelOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [panelOpen, popup]);
+
   // Tapping the search field while it already has text selects it all,
   // so typing immediately replaces the previous query. No-op on an empty field.
   const selectAllOnTap = (e) => {
@@ -1069,7 +1082,7 @@ export default function AttendanceTab() {
 
       {/* Date navigator — header row always visible; filters, date arrows and
           view-mode buttons live in the collapsible panel (panelOpen). */}
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 10px', marginBottom: 6, boxShadow: '0 1px 2px rgba(16,32,64,.05)', flexShrink: 0 }}>
+      <div ref={panelRef} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 10px', marginBottom: 6, boxShadow: '0 1px 2px rgba(16,32,64,.05)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: 36 }}
           onClick={() => setPanelOpen(p => !p)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>

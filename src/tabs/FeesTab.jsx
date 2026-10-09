@@ -52,21 +52,126 @@ const norm = (v) => (v || '').toString().trim().toLowerCase();
 // and never duplicated.
 const keyFor = (studentId, sport, batchLabel) => `${studentId}::${norm(sport)}::${norm(batchLabel)}`;
 
-// Same centered popup used by StudentsTab's / AttendanceTab's / HomeTab's
-// Sport/Batch/Sort filters — a dark overlay + a card of radio rows, closing
-// itself on selection.
+// ---------------------------------------------------------------------------
+// Presentation-only helpers (icons, styles) — same look as StudentsTab /
+// AttendanceTab. No fee, payment or data logic lives here.
+// ---------------------------------------------------------------------------
+
+// Outline icons (Lucide-style, 24px grid, round caps/joins, one stroke weight).
+const ICONS = {
+  wallet: <><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></>,
+  fileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /><path d="M10 9H8" /></>,
+  sheet: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6" /><path d="M8 13h2" /><path d="M14 13h2" /><path d="M8 17h2" /><path d="M14 17h2" /></>,
+  upload: <><path d="M12 15V3" /><path d="m7 8 5-5 5 5" /><path d="M4 17v3h16v-3" /></>,
+  lock: <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>,
+  calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></>,
+  search: <><circle cx="11" cy="11" r="7.5" /><path d="m21 21-4.35-4.35" /></>,
+  x: <><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
+  chevronUp: <path d="m18 15-6-6-6 6" />,
+  chevronLeft: <path d="m15 18-6-6 6-6" />,
+  chevronRight: <path d="m9 18 6-6-6-6" />,
+  alert: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></>,
+  message: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
+  messageCheck: <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="m9 10 2 2 4-4" /></>,
+  creditCard: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></>,
+  plus: <><path d="M12 5v14" /><path d="M5 12h14" /></>,
+  edit: <><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></>,
+  checkCircle: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" /></>,
+  xCircle: <><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></>,
+  clock: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>,
+  award: <><circle cx="12" cy="8" r="6" /><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" /></>,
+};
+
+function Icon({ name, size = 18, stroke = 2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+      style={{ flexShrink: 0, display: 'block' }}>
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+// Scoped hover / press / focus styles and small transitions. Prefixed `fe-`.
+const FEES_CSS = `
+.fe-btn{transition:transform .12s ease,background-color .15s ease,border-color .15s ease,box-shadow .15s ease,opacity .15s ease,color .15s ease}
+.fe-btn:active:not(:disabled){transform:scale(.96)}
+.fe-btn:disabled{cursor:not-allowed}
+.fe-btn:focus-visible,.fe-search:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+.fe-round:hover:not(:disabled){background:#EEF2FA}
+.fe-chip:hover{border-color:#9DB2DD}
+.fe-msg:hover:not(:disabled){background:#EEF2FA;border-color:#9DB2DD}
+.fe-pay:hover:not(:disabled){background:#14295A}
+.fe-summary:hover{border-color:#9DB2DD}
+.fe-search{transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
+.fe-search:focus{border-color:#5B7CC4 !important;box-shadow:0 0 0 3px rgba(91,124,196,.18);background:#fff !important}
+.fe-list .fe-card{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px rgba(16,32,64,.04);transition:border-color .15s ease,box-shadow .15s ease}
+@media (hover:hover){.fe-list .fe-card:hover{border-color:#B9C7E6;box-shadow:0 2px 8px rgba(16,32,64,.07)}}
+@keyframes fe-fade{from{opacity:0}to{opacity:1}}
+@keyframes fe-pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fe-overlay{animation:fe-fade .15s ease}
+.fe-sheet,.fe-panel{animation:fe-pop .16s ease}
+@media (prefers-reduced-motion:reduce){.fe-btn,.fe-search,.fe-card,.fe-overlay,.fe-sheet,.fe-panel{animation:none !important;transition:none !important}}
+`;
+
+// Equal-size filter chip; highlighted light blue when a filter is applied.
+function chipStyle(on) {
+  return {
+    flex: '1 1 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0,
+    height: 36, fontSize: 12, fontWeight: 600, padding: '0 8px', borderRadius: 10, fontFamily: 'inherit',
+    border: `1px solid ${on ? '#5B7CC4' : 'var(--border)'}`,
+    background: on ? 'rgba(91,124,196,.10)' : 'var(--card2)', color: '#1A336A', cursor: 'pointer',
+  };
+}
+
+// Round icon-only header action (PDF / Excel / Import) — identical to the
+// Students tab: white circle, navy ring, navy icon.
+function roundIconBtn(disabled) {
+  return {
+    width: 36, height: 36, borderRadius: '50%', border: '2px solid #04213A', padding: 0, flexShrink: 0,
+    background: '#fff', color: '#04213A', cursor: disabled ? 'not-allowed' : 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    boxShadow: '0 1px 3px rgba(4,33,58,.2)', opacity: disabled ? 0.5 : 1,
+  };
+}
+
+// Small square prev/next arrows beside the month / year buttons.
+const arrowBtnStyle = {
+  width: 28, height: 30, borderRadius: 8, border: '1px solid var(--border)', background: '#fff', color: '#1A336A',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, flexShrink: 0,
+};
+
+function ArrowGroup({ onPrev, onNext, prevLabel, nextLabel, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: '1 1 45%', minWidth: 120 }}>
+      <button type="button" className="fe-btn" style={arrowBtnStyle} onClick={onPrev} aria-label={prevLabel} title={prevLabel}><Icon name="chevronLeft" size={15} /></button>
+      {children}
+      <button type="button" className="fe-btn" style={arrowBtnStyle} onClick={onNext} aria-label={nextLabel} title={nextLabel}><Icon name="chevronRight" size={15} /></button>
+    </div>
+  );
+}
+
+// Centered popup shared by the Month / Year / Sport / Batch / Status pickers —
+// same look as the Students screen. Props are unchanged.
 function FilterPopup({ title, onClose, children }) {
   return (
     <div
+      className="fe-overlay"
       onClick={onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      role="dialog" aria-modal="true" aria-label={title}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(10,18,35,.5)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', borderRadius: 12, padding: 14, width: '85%', maxWidth: 320, maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 8px 30px rgba(0,0,0,.4)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 800 }}>{title}</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--gray)', cursor: 'pointer' }}>×</button>
+      <div className="fe-sheet" onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, padding: '14px 12px 10px', width: '100%', maxWidth: 320, maxHeight: 'min(68vh, 480px)', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 32px rgba(10,18,35,.24)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: 6, padding: '0 4px', flexShrink: 0 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: '#1A336A', textAlign: 'center' }}>{title}</div>
+          <button type="button" className="fe-btn" onClick={onClose} aria-label="Close" style={{ position: 'absolute', right: 0, width: 28, height: 28, borderRadius: '50%', background: '#F1F3F8', border: 'none', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="x" size={15} />
+          </button>
         </div>
-        {children}
+        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -74,8 +179,12 @@ function FilterPopup({ title, onClose, children }) {
 
 function RadioRow({ name, checked, onChange, label }) {
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-      <input type="radio" name={name} checked={checked} onChange={onChange} />
+    <label style={{
+      display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, minHeight: 42, padding: '8px 10px', borderRadius: 10,
+      cursor: 'pointer', margin: '2px 0', background: checked ? 'rgba(91,124,196,.12)' : 'transparent',
+      color: checked ? '#1A336A' : '#333', fontWeight: checked ? 600 : 500, transition: 'background .15s ease, color .15s ease',
+    }}>
+      <input type="radio" name={name} checked={checked} onChange={onChange} style={{ width: 18, height: 18, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' }} />
       {label}
     </label>
   );
@@ -756,6 +865,25 @@ export default function FeesTab() {
   // month, or the whole selected year) — same pattern AttendanceTab already
   // uses for the `attendance` table — instead of pulling every fee row the
   // academy has ever recorded.
+  // Collapse the filters card when the user taps anywhere outside it.
+  // Skipped while a picker popup is open (those render outside the card, and
+  // choosing an option there shouldn't close the panel behind it).
+  const filtersRef = useRef(null);
+  useEffect(() => {
+    if (!filtersOpen || popup) return;
+    const onPointerDown = (e) => {
+      if (filtersRef.current && !filtersRef.current.contains(e.target)) setFiltersOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [filtersOpen, popup]);
+
+  // Tapping the search field while it already has text selects it all,
+  // so typing immediately replaces the previous query. No-op on an empty field.
+  const selectAllOnTap = (e) => {
+    if (e.target.value) e.target.select();
+  };
+
   const loadFees = async () => {
     if (!academyId) return;
     let q = supabase.from('fees').select('*').eq('academy_id', academyId);
@@ -1215,106 +1343,113 @@ export default function FeesTab() {
     );
   }
 
+  // Presentation-only: label + count shown on the status summary card. Same
+  // expressions the old inline summary used.
+  const statusLabel = STATUS_OPTIONS.find(o => o.v === statusFilter)?.l;
+  const statusCount = statusFilter === 'outstanding' ? outstandingRows.length
+    : statusFilter === 'paid' ? paidRows.length
+    : statusFilter === 'partial' ? partialRows.length
+    : statusFilter === 'unpaid' ? unpaidRows.length
+    : allRows.length;
+
   return (
-    <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-        <div className="section-title" style={{ marginBottom: 0 }}>💰 Fees</div>
-        <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+    <div className="page active fe-root" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'inherit' }}>
+      <style>{FEES_CSS}</style>
+
+      {/* Header: title + PDF / Excel / Import icon buttons */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1A336A', minWidth: 0 }}>
+          <Icon name="wallet" size={20} />
+          <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-.01em' }}>Fees</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
           {canExportFees && hasFeature('has_reports') && (
             <>
-              <button className="btn btn-gold btn-sm" style={{ padding: '5px 9px', fontSize: 11 }} onClick={() => exportGenericPdf('Fees Report', exportColumns, exportRows.map(row => exportColumns.map(c => row[c])), 'fees.pdf')}>PDF</button>
-              <button className="btn btn-success btn-sm" style={{ padding: '5px 9px', fontSize: 11 }} onClick={() => exportGenericXlsx(exportRows, 'fees.xlsx', 'Fees')}>XL</button>
+              <button type="button" className="fe-btn fe-round" style={roundIconBtn(false)} aria-label="Export fees as PDF" title="Export PDF" onClick={() => exportGenericPdf('Fees Report', exportColumns, exportRows.map(row => exportColumns.map(c => row[c])), 'fees.pdf')}><Icon name="fileText" size={18} /></button>
+              <button type="button" className="fe-btn fe-round" style={roundIconBtn(false)} aria-label="Export fees as Excel" title="Export Excel" onClick={() => exportGenericXlsx(exportRows, 'fees.xlsx', 'Fees')}><Icon name="sheet" size={18} /></button>
             </>
           )}
           {canExportFees && !hasFeature('has_reports') && (() => {
             const target = cheapestPlanWithFeature('has_reports');
+            const msg = target ? `Upgrade to ${target.name} to unlock exports` : 'Not available on your plan';
             return (
-              <button
-                className="btn btn-outline btn-sm"
-                style={{ padding: '5px 9px', fontSize: 11, opacity: 0.5, cursor: 'not-allowed' }}
-                disabled
-                title={target ? `Upgrade to ${target.name} to unlock exports` : 'Not available on your plan'}
-              >
-                PDF/XL
+              <button type="button" className="fe-btn fe-round" style={roundIconBtn(true)} disabled aria-label={msg} title={msg}>
+                <Icon name="lock" size={16} />
               </button>
             );
           })()}
           {canImportFees && hasFeature('has_bulk_import') && (
-            <button className="btn btn-outline btn-sm" onClick={() => setShowImport(true)}>⬆️ Import</button>
+            <button type="button" className="fe-btn fe-round" style={roundIconBtn(false)} aria-label="Import fees" title="Import" onClick={() => setShowImport(true)}><Icon name="upload" size={18} /></button>
           )}
           {canImportFees && !hasFeature('has_bulk_import') && (() => {
             const target = cheapestPlanWithFeature('has_bulk_import');
+            const msg = target ? `Upgrade to ${target.name} to unlock bulk import` : 'Not available on your plan';
             return (
-              <button
-                className="btn btn-outline btn-sm"
-                style={{ opacity: 0.5, cursor: 'not-allowed' }}
-                disabled
-                title={target ? `Upgrade to ${target.name} to unlock bulk import` : 'Not available on your plan'}
-              >
-                ⬆️ Import
+              <button type="button" className="fe-btn fe-round" style={roundIconBtn(true)} disabled aria-label={msg} title={msg}>
+                <Icon name="lock" size={16} />
               </button>
             );
           })()}
         </div>
       </div>
 
-      {/* Filters dropdown: view mode, month, year, sport, batch */}
-      <div className="card" style={{ padding: 0, marginBottom: 8, overflow: 'hidden' }}>
-        <button
+      {/* Filters card: view mode, month, year, sport, batch (collapsible) */}
+      <div ref={filtersRef} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 10px', marginBottom: 6, boxShadow: '0 1px 2px rgba(16,32,64,.05)', flexShrink: 0 }}>
+        <div
+          role="button" tabIndex={0} aria-expanded={filtersOpen}
           onClick={() => setFiltersOpen(v => !v)}
-          style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}
+          onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setFiltersOpen(v => !v); } }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'pointer', minHeight: 36 }}
         >
-          <span>Filters — {viewMode === 'year' ? `Full Year ${year}` : `${MONTHS[month - 1]} ${year}`}{sportFilter ? ` · ${sportFilter}` : ''}{batchFilter ? ` · ${batchFilter}` : ''}</span>
-          <span>{filtersOpen ? '▲' : '▼'}</span>
-        </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <span style={{ display: 'flex', color: '#1A336A' }} aria-hidden="true"><Icon name="calendar" size={18} /></span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: '#182238', whiteSpace: 'nowrap' }}>{viewMode === 'year' ? `Full Year ${year}` : `${MONTHS[month - 1]} ${year}`}</span>
+            {(sportFilter || batchFilter) && (
+              <span style={{ fontSize: 11.5, color: 'var(--gray)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{[sportFilter, batchFilter].filter(Boolean).join(' · ')}</span>
+            )}
+          </div>
+          <button type="button" className="fe-btn" style={{ ...arrowBtnStyle, border: 'none', background: 'var(--card2)', borderRadius: '50%', width: 28 }}
+            aria-label={filtersOpen ? 'Collapse filters' : 'Expand filters'} aria-expanded={filtersOpen}
+            onClick={(e) => { e.stopPropagation(); setFiltersOpen(v => !v); }}>
+            <Icon name={filtersOpen ? 'chevronUp' : 'chevronDown'} size={16} />
+          </button>
+        </div>
 
         {filtersOpen && (
-          <div style={{ padding: '0 12px 12px' }}>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-              <button
-                style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: viewMode === 'month' ? 'var(--accent2)' : 'var(--card2)', color: viewMode === 'month' ? '#fff' : 'var(--gray)' }}
-                onClick={() => setViewMode('month')}
-              >📅 Month</button>
-              <button
-                style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: viewMode === 'year' ? 'var(--accent2)' : 'var(--card2)', color: viewMode === 'year' ? '#fff' : 'var(--gray)' }}
-                onClick={() => setViewMode('year')}
-              >🗓️ Full Year</button>
+          <div className="fe-panel" style={{ marginTop: 8, marginBottom: 6, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div role="group" aria-label="View mode" style={{ display: 'flex', gap: 3, padding: 3, borderRadius: 11, background: 'var(--card2)', border: '1px solid var(--border)' }}>
+              {[['month', 'Month'], ['year', 'Full Year']].map(([m, l]) => (
+                <button key={m} type="button" className="fe-btn" aria-pressed={viewMode === m}
+                  style={{ flex: 1, height: 30, borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, background: viewMode === m ? '#1A336A' : 'transparent', color: viewMode === m ? '#fff' : '#1A336A' }}
+                  onClick={() => setViewMode(m)}>
+                  {l}
+                </button>
+              ))}
             </div>
 
-            <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {viewMode === 'month' && (
-                <>
-                  <button
-                    className="btn btn-xs"
-                    style={{ padding: '6px 10px' }}
-                    onClick={goPrevMonth}
-                  >◀</button>
-                  <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 12, padding: '7px 9px' }} onClick={() => setPopup('month')}>
+                <ArrowGroup onPrev={goPrevMonth} onNext={goNextMonth} prevLabel="Previous month" nextLabel="Next month">
+                  <button type="button" className="fe-btn fe-chip" style={{ ...chipStyle(false), height: 30, borderRadius: 8 }} onClick={() => setPopup('month')} aria-haspopup="dialog" aria-label="Select month">
                     {MONTHS[month - 1]}
                   </button>
-                  <button
-                    className="btn btn-xs"
-                    style={{ padding: '6px 10px' }}
-                    onClick={goNextMonth}
-                  >▶</button>
-                </>
+                </ArrowGroup>
               )}
-            </div>
-
-            <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center' }}>
-              <button className="btn btn-xs" style={{ padding: '6px 10px' }} onClick={() => setYear(y => y - 1)}>◀</button>
-              <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 12, padding: '7px 9px' }} onClick={() => setPopup('year')}>
-                {year}
-              </button>
-              <button className="btn btn-xs" style={{ padding: '6px 10px' }} onClick={() => setYear(y => y + 1)}>▶</button>
+              <ArrowGroup onPrev={() => setYear(y => y - 1)} onNext={() => setYear(y => y + 1)} prevLabel="Previous year" nextLabel="Next year">
+                <button type="button" className="fe-btn fe-chip" style={{ ...chipStyle(false), height: 30, borderRadius: 8 }} onClick={() => setPopup('year')} aria-haspopup="dialog" aria-label="Select year">
+                  {year}
+                </button>
+              </ArrowGroup>
             </div>
 
             <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('sport')}>
-                {sportFilter || 'All Sports'}
+              <button type="button" className="fe-btn fe-chip" style={chipStyle(!!sportFilter)} onClick={() => setPopup('sport')} aria-haspopup="dialog" aria-label="Filter by sport">
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sportFilter || 'All Sports'}</span>
+                <Icon name="chevronDown" size={13} />
               </button>
-              <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('batch')}>
-                {batchFilter || 'All Batches'}
+              <button type="button" className="fe-btn fe-chip" style={chipStyle(!!batchFilter)} onClick={() => setPopup('batch')} aria-haspopup="dialog" aria-label="Filter by batch">
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{batchFilter || 'All Batches'}</span>
+                <Icon name="chevronDown" size={13} />
               </button>
             </div>
           </div>
@@ -1377,41 +1512,62 @@ export default function FeesTab() {
         </FilterPopup>
       )}
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-        <div className="search-wrap" style={{ flex: 1 }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-          <input type="text" className="search-input" placeholder="Search name or roll no." value={search} onChange={e => setSearch(e.target.value)} />
-          {search && <button type="button" className="search-clear-btn" onClick={() => setSearch('')} aria-label="Clear search">✕</button>}
-        </div>
+      {/* Search — same component look as the Students tab */}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 6, flexShrink: 0 }}>
+        <span style={{ position: 'absolute', left: 12, display: 'flex', color: 'var(--gray)', pointerEvents: 'none' }}>
+          <Icon name="search" size={16} />
+        </span>
+        <input
+          type="text"
+          className="fe-search"
+          placeholder="Search name or roll no."
+          aria-label="Search students by name or roll number"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          onFocus={selectAllOnTap}
+          onClick={selectAllOnTap}
+          style={{
+            width: '100%', height: 38, padding: '0 38px 0 36px', boxSizing: 'border-box', borderRadius: 10,
+            border: '1px solid var(--border)', background: 'var(--card2)', fontSize: 13.5, fontWeight: 400,
+            color: '#182238', outline: 'none', fontFamily: 'inherit',
+          }}
+        />
+        {search && (
+          <button type="button" className="fe-btn" onClick={() => setSearch('')} aria-label="Clear search"
+            style={{ position: 'absolute', right: 7, width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'var(--border)', color: 'var(--gray)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="x" size={13} stroke={2.4} />
+          </button>
+        )}
       </div>
 
-      {/* Paid / Unpaid filter */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-        <button className="btn btn-outline btn-sm" style={{ flex: 1, fontSize: 12, padding: '7px 9px', background: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, textAlign: 'left' }} onClick={() => setPopup('status')}>
-          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {STATUS_OPTIONS.find(o => o.v === statusFilter)?.l} ({
-              statusFilter === 'outstanding' ? outstandingRows.length
-              : statusFilter === 'paid' ? paidRows.length
-              : statusFilter === 'partial' ? partialRows.length
-              : statusFilter === 'unpaid' ? unpaidRows.length
-              : allRows.length
-            }){isAdmin && (
-              <span style={{ color: '#1a9c4b', fontWeight: 800 }}> · ₹{activeAmountTotal}</span>
-            )}
-          </span>
-          <span style={{ flexShrink: 0, fontSize: 11 }}>▼</span>
-        </button>
-      </div>
+      {/* Status summary: filter label + student count (+ collected amount for admins) */}
+      <button
+        type="button"
+        className="fe-btn fe-summary"
+        onClick={() => setPopup('status')}
+        aria-haspopup="dialog"
+        aria-label={`Filter by status: ${statusLabel}, ${statusCount} students${isAdmin ? `, ₹${activeAmountTotal}` : ''}`}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, minHeight: 40, padding: '6px 12px', marginBottom: 6, flexShrink: 0, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 1px 2px rgba(16,32,64,.05)', cursor: 'pointer', fontFamily: 'inherit', color: '#1A336A', textAlign: 'left' }}
+      >
+        <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{statusLabel}</span>
+          <span style={{ fontSize: 11.5, fontWeight: 700, padding: '1px 8px', borderRadius: 8, background: 'rgba(91,124,196,.12)', border: '1px solid rgba(91,124,196,.28)', whiteSpace: 'nowrap' }}>{statusCount}</span>
+        </span>
+        {isAdmin && (
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#166534', whiteSpace: 'nowrap' }}>₹{activeAmountTotal}</span>
+        )}
+        <Icon name="chevronDown" size={16} />
+      </button>
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 90 }}>
-        {loading && <div style={{ padding: 20, textAlign: 'center', fontSize: 12, color: 'var(--gray)' }}>Loading…</div>}
+      <div className="fe-list" style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingBottom: 90, marginTop: 2 }}>
+        {loading && <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--gray)' }}>Loading…</div>}
 
         {!loading && activeRows.length === 0 && (
-          <div style={{ padding: 20, textAlign: 'center', fontSize: 12, color: 'var(--gray)' }}>
+          <div style={{ padding: 30, textAlign: 'center', fontSize: 13, color: 'var(--gray)' }}>
             {statusFilter === 'paid' ? 'No paid students yet.'
               : statusFilter === 'partial' ? 'No partially paid students.'
-              : statusFilter === 'unpaid' ? 'No unpaid students 🎉'
-              : statusFilter === 'outstanding' ? 'No unpaid or partially paid students 🎉'
+              : statusFilter === 'unpaid' ? 'No unpaid students.'
+              : statusFilter === 'outstanding' ? 'No unpaid or partially paid students.'
               : 'No students to show.'}
           </div>
         )}
@@ -1422,7 +1578,7 @@ export default function FeesTab() {
             if (pRows.length === 0) return null;
             return (
               <div key={p.monthKey}>
-                <div style={{ padding: '6px 4px', fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>{monthLabelFor(p.monthKey)}</div>
+                <div style={{ padding: '10px 4px 6px', fontSize: 12, fontWeight: 700, color: '#1A336A', textTransform: 'uppercase', letterSpacing: '.06em' }}>{monthLabelFor(p.monthKey)}</div>
                 {pRows.map(r => (
                   <FeeRow key={r.key + r.monthKey} row={r} isAdmin={isAdmin} onReminder={openReminder} onThankYou={openThankYou} onEdit={openEntry} getPending={getPending} onShowPending={setPendingPopup} />
                 ))}
@@ -1438,8 +1594,8 @@ export default function FeesTab() {
       </div>
 
       {pendingPopup && (
-        <FilterPopup title={`⚠️ Pending fees — ${pendingPopup.student.name}`} onClose={() => setPendingPopup(null)}>
-          <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 8 }}>
+        <FilterPopup title={`Pending fees — ${pendingPopup.student.name}`} onClose={() => setPendingPopup(null)}>
+          <div style={{ fontSize: 12, color: 'var(--gray)', marginBottom: 8, padding: '0 4px' }}>
             {pendingPopup.sport}{pendingPopup.batchLabel ? ` · ${pendingPopup.batchLabel}` : ''} · {pendingPopup.items.length} earlier month{pendingPopup.items.length > 1 ? 's' : ''} not fully paid
           </div>
           {pendingPopup.items.map(it => (
@@ -1605,56 +1761,84 @@ function FeeRow({ row, isAdmin, onReminder, onThankYou, onEdit, getPending, onSh
   const due = fee?.amount_due ? parseInt(fee.amount_due, 10) : null;
   const amountPaid = fee?.amount ? parseInt(fee.amount, 10) : 0;
   const remaining = due != null ? Math.max(due - amountPaid, 0) : null;
-  const btnLabel = scholarship ? '🔒 Scholarship' : paid && !editable ? '🔒 Paid' : (partial ? '➕ Add Payment' : (hasEntry ? '✏️ Edit' : '💳 Pay'));
+  const btnLabel = scholarship ? 'Scholarship' : paid && !editable ? 'Paid' : (partial ? 'Add Payment' : (hasEntry ? 'Edit' : 'Pay'));
+  const btnText = btnLabel === 'Add Payment' ? 'Add' : btnLabel; // compact on-screen text; full label stays in title/aria-label
+  const btnIcon = scholarship || (paid && !editable) ? 'lock' : partial ? 'plus' : hasEntry ? 'edit' : 'creditCard';
   const badgeLabel = scholarship ? 'scholarship' : paid ? 'paid' : partial ? 'partially paid' : 'unpaid';
   const reminderCount = (fee?.msg_sent || []).filter(m => m.kind === 'reminder').length;
   const thankYouCount = (fee?.msg_sent || []).filter(m => m.kind === 'paid').length;
+  const msgCount = paid ? thankYouCount : reminderCount;
+  const msgLabel = paid ? 'Send thank-you' : 'Send reminder';
+
+  // Status badge: icon + text (never colour alone), restrained tones.
+  const tone = scholarship ? { bg: 'rgba(124,58,237,.10)', fg: '#6D28D9', bd: 'rgba(124,58,237,.30)', icon: 'award' }
+    : paid ? { bg: 'rgba(22,163,74,.10)', fg: '#166534', bd: 'rgba(22,163,74,.30)', icon: 'checkCircle' }
+    : partial ? { bg: 'rgba(245,158,11,.14)', fg: '#92400E', bd: 'rgba(245,158,11,.40)', icon: 'clock' }
+    : { bg: 'rgba(220,38,38,.08)', fg: '#B91C1C', bd: 'rgba(220,38,38,.28)', icon: 'xCircle' };
+
+  const meta = [];
+  if (scholarship) meta.push('Fee waived (scholarship)');
+  if (!scholarship && partial && due != null) meta.push(`₹${amountPaid}/₹${due} (₹${remaining} left)`);
+  if (!scholarship && fee?.method) meta.push(fee.method);
+  if (fee?.collected_by) meta.push(`Collected by ${fee.collected_by}`);
 
   return (
-    <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '10px 10px', marginBottom: 8, flexWrap: 'nowrap', overflow: 'hidden' }}>
+    <div className="fe-card">
       <div style={{ flex: '1 1 0%', minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
-          <span style={{ fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{student.name}</span>
+        <div style={{ fontWeight: 600, fontSize: 14, color: '#182238', lineHeight: 1.3, overflowWrap: 'anywhere' }}>{student.name}</div>
+        <div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.35, overflowWrap: 'anywhere' }}>
+          {sport}{batchLabel ? ` · ${batchLabel}` : ''}
+        </div>
+        {meta.length > 0 && (
+          <div style={{ fontSize: 11.5, color: 'var(--gray)', lineHeight: 1.35, overflowWrap: 'anywhere' }}>{meta.join(' · ')}</div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 4 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 8, whiteSpace: 'nowrap', background: tone.bg, color: tone.fg, border: `1px solid ${tone.bd}` }}>
+            <Icon name={tone.icon} size={12} stroke={2.4} />
+            {badgeLabel}
+            {isAdmin && !scholarship && (paid || partial) && amountPaid > 0 ? ` · ₹${amountPaid}` : ''}
+          </span>
           {pendingItems.length > 0 && (
             <button
               type="button"
+              className="fe-btn"
               title={`Pending fees for ${pendingItems.length} earlier month${pendingItems.length > 1 ? 's' : ''}`}
+              aria-label={`${pendingItems.length} pending earlier month${pendingItems.length > 1 ? 's' : ''} — view details`}
               onClick={() => onShowPending({ student, sport, batchLabel, items: pendingItems })}
-              style={{ flexShrink: 0, fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 8, cursor: 'pointer', whiteSpace: 'nowrap', border: '1px solid rgba(224,160,32,0.5)', background: 'rgba(224,160,32,0.15)', color: '#e0a020' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 8, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit', border: '1px solid rgba(245,158,11,.40)', background: 'rgba(245,158,11,.14)', color: '#92400E' }}
             >
-              ⚠️ {pendingItems.length} pending
+              <Icon name="alert" size={12} stroke={2.4} />
+              {pendingItems.length} pending
             </button>
           )}
         </div>
-        <div style={{ fontSize: 10, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {sport}{batchLabel ? ` · ${batchLabel}` : ''}
-          {scholarship && <span style={{ color: 'var(--gold, #e0a020)' }}> · 🎓 fee waived</span>}
-          {!scholarship && partial && due != null && <span style={{ color: 'var(--gold)' }}> · ₹{amountPaid}/₹{due} (₹{remaining} left)</span>}
-          {!scholarship && fee?.method && <span> · {fee.method}</span>}
-          {fee?.collected_by && <span style={{ color: 'var(--gold)' }}> · 👤 {fee.collected_by}</span>}
-        </div>
       </div>
-      <span
-        className={'badge ' + (scholarship ? 'badge-gold' : paid ? 'badge-green' : partial ? 'badge-orange' : 'badge-red')}
-        style={{ fontSize: 9, padding: '2px 6px', borderRadius: 8, flexShrink: 0, whiteSpace: 'nowrap', ...(partial && !scholarship ? { background: 'rgba(230,160,20,0.18)', color: '#e0a020' } : {}), ...(scholarship ? { background: 'rgba(160,120,255,0.18)', color: '#a078ff' } : {}) }}
-      >
-        {badgeLabel}
-        {isAdmin && !scholarship && (paid || partial) && amountPaid > 0 ? ` · ₹${amountPaid}` : ''}
-      </span>
-      {paid ? (
-        <button className="btn btn-outline" title="Send thank-you" style={{ fontSize: 10, padding: '3px 7px', borderRadius: 6, flexShrink: 0, whiteSpace: 'nowrap' }} onClick={() => onThankYou(row)}>🎉{thankYouCount > 0 ? ` ${thankYouCount}` : ''}</button>
-      ) : (
-        <button className="btn btn-outline" title="Send reminder" style={{ fontSize: 10, padding: '3px 7px', borderRadius: 6, flexShrink: 0, whiteSpace: 'nowrap' }} onClick={() => onReminder(row)}>💬{reminderCount > 0 ? ` ${reminderCount}` : ''}</button>
-      )}
-      <button
-        className="btn btn-primary"
-        title={btnLabel}
-        style={{ fontSize: 10, padding: '3px 7px', borderRadius: 6, flexShrink: 0, whiteSpace: 'nowrap', opacity: paid && !editable ? 0.5 : 1 }}
-        disabled={paid && !editable}
-        onClick={() => editable && onEdit(row)}
-      >
-        {btnLabel}
-      </button>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <button
+          type="button"
+          className="fe-btn fe-msg"
+          title={msgLabel}
+          aria-label={msgCount > 0 ? `${msgLabel} (${msgCount} sent)` : msgLabel}
+          style={{ height: 34, minWidth: 34, padding: msgCount > 0 ? '0 9px' : 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, border: '1px solid #C5D0EA', borderRadius: 9, background: '#fff', color: '#1A336A', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+          onClick={() => (paid ? onThankYou(row) : onReminder(row))}
+        >
+          <Icon name={paid ? 'messageCheck' : 'message'} size={16} />
+          {msgCount > 0 && <span>{msgCount}</span>}
+        </button>
+        <button
+          type="button"
+          className="fe-btn fe-pay"
+          title={btnLabel}
+          aria-label={btnLabel}
+          style={{ height: 34, padding: '0 11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, border: '1px solid #1A336A', borderRadius: 9, background: '#1A336A', color: '#fff', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'inherit', opacity: paid && !editable ? 0.5 : 1 }}
+          disabled={paid && !editable}
+          onClick={() => editable && onEdit(row)}
+        >
+          <Icon name={btnIcon} size={15} />
+          {btnText}
+        </button>
+      </div>
     </div>
   );
 }
