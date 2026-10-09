@@ -50,10 +50,49 @@ function parseCSVLine(line) {
   return cols;
 }
 
+// Outline icons used by this popup (Lucide-style, round caps, one stroke weight)
+// — same set and look as ImportStudentsModal.
+const ICONS = {
+  upload: <><path d="M12 15V3" /><path d="m7 8 5-5 5 5" /><path d="M4 17v3h16v-3" /></>,
+  x: <><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>,
+  download: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M4 17v3h16v-3" /></>,
+  sheet: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6" /><path d="M8 13h2" /><path d="M14 13h2" /><path d="M8 17h2" /><path d="M14 17h2" /></>,
+  alert: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></>,
+  info: <><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></>,
+  lock: <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>,
+  clock: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>,
+};
+
+function Icon({ name, size = 18, stroke = 2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+      style={{ flexShrink: 0, display: 'block' }}>
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+const IMPORT_CSS = `
+  .im-overlay{animation:im-fade .15s ease}
+  .im-sheet{animation:im-pop .16s ease}
+  @keyframes im-fade{from{opacity:0}to{opacity:1}}
+  @keyframes im-pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .im-btn{transition:transform .12s ease,background-color .15s ease,border-color .15s ease}
+  .im-btn:active:not(:disabled){transform:scale(.97)}
+  .im-btn:focus-visible,.im-drop:focus-within,.im-guide summary:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+  .im-drop{transition:border-color .15s ease,background-color .15s ease}
+  .im-drop:hover{border-color:#5B7CC4;background:rgba(91,124,196,.06)}
+  .im-guide summary{list-style:none}
+  .im-guide summary::-webkit-details-marker{display:none}
+  @media (prefers-reduced-motion:reduce){.im-overlay,.im-sheet,.im-btn,.im-drop{animation:none !important;transition:none !important}}
+`;
+
 export default function ImportAttendanceModal({ academyId, existingStudents, sportFilter, batchFilter, markedBy, onClose, onImported }) {
   const [preview, setPreview] = useState(null); // { dateColumns, studentRows, insertCount, updateCount, unchangedCount, rejected }
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [fileName, setFileName] = useState(''); // display only — name of the chosen file
   const [confirming, setConfirming] = useState(false); // true once user has reviewed the summary and is on the final "are you sure" step
 
   const downloadTemplate = () => {
@@ -332,52 +371,97 @@ export default function ImportAttendanceModal({ academyId, existingStudents, spo
     onClose();
   };
 
+  const chip = (bg, fg) => ({ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 8, background: bg, color: fg });
+  const rowChip = (color) => ({ flexShrink: 0, fontWeight: 600, fontSize: 11.5, color });
+  const notice = (bg, bd, fg) => ({ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12.5, color: fg, background: bg, border: `1px solid ${bd}`, borderRadius: 10, padding: '9px 10px' });
+  const outlineBtn = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 40, borderRadius: 10, border: '1px solid #C5D0EA', background: '#fff', color: '#1A336A', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' };
+
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,40,.55)', zIndex: 9999 }}>
-      <div style={{ background: 'var(--card)', width: '100%', maxWidth: 480, margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 18px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--card2)' }}>
-          <div style={{ fontWeight: 800, fontSize: 16 }}>⬆️ Import Attendance</div>
-          <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--card)', border: '1px solid var(--border)', cursor: 'pointer' }}>✕</button>
+    <div className="im-overlay" role="dialog" aria-modal="true" aria-label="Import Attendance" style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,40,.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <style>{IMPORT_CSS}</style>
+      <div className="im-sheet" style={{ background: 'var(--card)', width: '100%', maxWidth: 480, maxHeight: '85vh', borderRadius: 16, margin: '0 auto', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow)', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px 12px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--card2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(91,124,196,.14)', color: '#1A336A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="upload" size={18} />
+            </span>
+            <span style={{ fontWeight: 700, fontSize: 16, color: '#1A336A' }}>Import Attendance</span>
+          </div>
+          <button className="im-btn" onClick={onClose} aria-label="Close" style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--gray)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="x" size={16} />
+          </button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 10, padding: 12, fontSize: 12.5, lineHeight: 1.6 }}>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>📋 Required CSV/Excel format:</div>
-            <div style={{ fontFamily: 'monospace', fontSize: 11.5, color: 'var(--gray)', marginBottom: 8, wordBreak: 'break-all' }}>
-              Name, RollNo, Sport, Batch, DD/MM/YYYY, DD/MM/YYYY, ...
+        <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <details className="im-guide" style={{ background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 12px', fontSize: 12.5, lineHeight: 1.6 }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#1A336A', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon name="info" size={16} /> Required file format
+            </summary>
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontFamily: 'monospace', fontSize: 11.5, color: 'var(--gray)', marginBottom: 8, wordBreak: 'break-all' }}>
+                Name, RollNo, Sport, Batch, DD/MM/YYYY, DD/MM/YYYY, ...
+              </div>
+              <div>• <strong>Name</strong> or <strong>RollNo</strong> is required to identify the student.</div>
+              <div>• <strong>Batch</strong> must exactly match the student's batch in the app — rows are skipped if it doesn't.</div>
+              <div>• Add one column per date to mark, with the header as <strong>DD/MM/YYYY</strong> (e.g. 15/06/2025).</div>
+              <div>• Fill each date column with <strong>P</strong> for Present, <strong>A</strong> for Absent. Leave a cell blank to skip that student for that date.</div>
+              <div>• First row treated as header and skipped.</div>
+              <div>• Future-dated columns are skipped automatically — attendance can't be marked ahead of time.</div>
+              <div>• Rows before a student's join date, after they were banned, or on a closed register are skipped automatically.</div>
             </div>
-            <div>• <strong>Name</strong> or <strong>RollNo</strong> is required to identify the student.</div>
-            <div>• <strong>Batch</strong> must exactly match the student's batch in the app — rows are skipped if it doesn't.</div>
-            <div>• Add one column per date to mark, with the header as <strong>DD/MM/YYYY</strong> (e.g. 15/06/2025).</div>
-            <div>• Fill each date column with <strong>P</strong> for Present, <strong>A</strong> for Absent. Leave a cell blank to skip that student for that date.</div>
-            <div>• First row treated as header and skipped.</div>
-            <div>• Future-dated columns are skipped automatically — attendance can't be marked ahead of time.</div>
-            <div>• Rows before a student's join date, after they were banned, or on a closed register are skipped automatically.</div>
-          </div>
+          </details>
 
-          <button className="btn btn-outline btn-sm" onClick={downloadTemplate}>📥 Download Excel Template</button>
+          <button className="im-btn" onClick={downloadTemplate} style={outlineBtn}>
+            <Icon name="download" size={16} /> Download Template
+          </button>
 
           <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray)', display: 'block', marginBottom: 6 }}>Choose CSV or Excel File</label>
-            <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="form-input" />
+            <label htmlFor="im-file" style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray)', display: 'block', marginBottom: 6 }}>Choose file (.csv, .xlsx, .xls)</label>
+            <label className="im-drop" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 64, padding: '12px 14px', border: '1.5px dashed #B4BED3', borderRadius: 12, background: 'var(--card2)', cursor: 'pointer', textAlign: 'center' }}>
+              <input
+                id="im-file"
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => { setFileName(e.target.files?.[0]?.name || ''); handleFile(e); }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+              />
+              <span style={{ display: 'flex', color: '#1A336A' }}><Icon name={fileName ? 'sheet' : 'upload'} size={22} stroke={1.75} /></span>
+              <span style={{ minWidth: 0, textAlign: 'left' }}>
+                <span style={{ display: 'block', fontSize: 13.5, fontWeight: 600, color: '#1A336A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {fileName || 'Tap to choose a file'}
+                </span>
+                <span style={{ display: 'block', fontSize: 11.5, color: 'var(--gray)' }}>
+                  {fileName ? 'Tap to choose a different file' : 'CSV or Excel spreadsheet'}
+                </span>
+              </span>
+            </label>
           </div>
 
-          {error && <div style={{ fontSize: 12.5, color: '#dc2626', background: 'rgba(220,38,38,.08)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 8, padding: '8px 10px' }}>⚠️ {error}</div>}
+          {error && (
+            <div role="alert" style={{ ...notice('rgba(220,38,38,.07)', 'rgba(220,38,38,.25)', '#dc2626'), whiteSpace: 'pre-line' }}>
+              <span style={{ display: 'flex', marginTop: 1 }}><Icon name="alert" size={16} /></span>
+              <span style={{ minWidth: 0 }}>{error}</span>
+            </div>
+          )}
 
           {preview && (
             <>
               {preview.futureDatesSkipped?.length > 0 && (
-                <div style={{ fontSize: 12, color: '#fbbf24', background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.35)', borderRadius: 8, padding: '8px 10px' }}>
-                  🔒 Future dates are not allowed — {preview.futureDatesSkipped.length} column(s) skipped: {preview.futureDatesSkipped.map(formatDDMMYYYY).join(', ')}
+                <div style={notice('rgba(245,158,11,.10)', 'rgba(245,158,11,.35)', '#92400E')}>
+                  <span style={{ display: 'flex', marginTop: 1 }}><Icon name="lock" size={16} /></span>
+                  <span style={{ minWidth: 0 }}>Future dates are not allowed — {preview.futureDatesSkipped.length} column(s) skipped: {preview.futureDatesSkipped.map(formatDDMMYYYY).join(', ')}</span>
                 </div>
               )}
               {(preview.lockedCount > 0 || preview.ineligibleCount > 0) && (
-                <div style={{ fontSize: 12, color: '#f87171', background: 'rgba(220,38,38,.08)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 8, padding: '8px 10px' }}>
-                  ⛔ {preview.lockedCount + preview.ineligibleCount} cell(s) blocked
-                  {preview.lockedCount > 0 && ` — ${preview.lockedCount} on a closed register`}
-                  {preview.lockedCount > 0 && preview.ineligibleCount > 0 && ','}
-                  {preview.ineligibleCount > 0 && ` ${preview.ineligibleCount} before join date / after ban`}
-                  . See below for which — reopen the register on the Attendance tab first if these need to go in.
+                <div style={notice('rgba(220,38,38,.07)', 'rgba(220,38,38,.25)', '#B91C1C')}>
+                  <span style={{ display: 'flex', marginTop: 1 }}><Icon name="alert" size={16} /></span>
+                  <span style={{ minWidth: 0 }}>
+                    {preview.lockedCount + preview.ineligibleCount} cell(s) blocked
+                    {preview.lockedCount > 0 && ` — ${preview.lockedCount} on a closed register`}
+                    {preview.lockedCount > 0 && preview.ineligibleCount > 0 && ','}
+                    {preview.ineligibleCount > 0 && ` ${preview.ineligibleCount} before join date / after ban`}
+                    . See below for which — reopen the register on the Attendance tab first if these need to go in.
+                  </span>
                 </div>
               )}
               {(() => {
@@ -386,72 +470,52 @@ export default function ImportAttendanceModal({ academyId, existingStudents, spo
                 const skipTotal = preview.unchangedCount + skippedRows.length;
                 return (
                   <>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <div className="card" style={{ flex: 1, padding: 8, textAlign: 'center' }}>
-                        <div style={{ fontSize: 10, color: 'var(--gray)' }}>Insert</div>
-                        <div style={{ fontWeight: 800, fontSize: 16, color: '#16a34a' }}>{preview.insertCount}</div>
-                      </div>
-                      <div className="card" style={{ flex: 1, padding: 8, textAlign: 'center' }}>
-                        <div style={{ fontSize: 10, color: 'var(--gray)' }}>Update</div>
-                        <div style={{ fontWeight: 800, fontSize: 16, color: '#d97706' }}>{preview.updateCount}</div>
-                      </div>
-                      <div className="card" style={{ flex: 1, padding: 8, textAlign: 'center' }}>
-                        <div style={{ fontSize: 10, color: 'var(--gray)' }}>Blocked</div>
-                        <div style={{ fontWeight: 800, fontSize: 16, color: '#dc2626' }}>{preview.lockedCount + preview.ineligibleCount}</div>
-                      </div>
-                      <div className="card" style={{ flex: 1, padding: 8, textAlign: 'center' }}>
-                        <div style={{ fontSize: 10, color: 'var(--gray)' }}>Skip</div>
-                        <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--gray)' }}>{skipTotal}</div>
-                      </div>
-                      <div className="card" style={{ flex: 1, padding: 8, textAlign: 'center' }}>
-                        <div style={{ fontSize: 10, color: 'var(--gray)' }}>Reject</div>
-                        <div style={{ fontWeight: 800, fontSize: 16, color: '#dc2626' }}>{rejectedRows.length}</div>
-                      </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
+                      <div className="card" style={{ padding: '8px 4px', textAlign: 'center', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>Insert</div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: '#16a34a' }}>{preview.insertCount}</div>
+                </div>
+                <div className="card" style={{ padding: '8px 4px', textAlign: 'center', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>Update</div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--accent2)' }}>{preview.updateCount}</div>
+                </div>
+                <div className="card" style={{ padding: '8px 4px', textAlign: 'center', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>Blocked</div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: '#dc2626' }}>{preview.lockedCount + preview.ineligibleCount}</div>
+                </div>
+                <div className="card" style={{ padding: '8px 4px', textAlign: 'center', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>Skip</div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--gray)' }}>{skipTotal}</div>
+                </div>
+                <div className="card" style={{ padding: '8px 4px', textAlign: 'center', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 500, color: 'var(--gray)' }}>Reject</div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: '#dc2626' }}>{rejectedRows.length}</div>
+                </div>
                     </div>
 
-                    <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {preview.studentRows.map((r, i) => (
-                        <div key={'m' + i} className="card" style={{ padding: 10, fontSize: 12.5 }}>
-                          <div><strong>{r.student.name}</strong> · #{r.student.roll_no} · {r.student.sport}/{r.student.batchLabel}</div>
+                        <div key={'m' + i} className="card" style={{ padding: '8px 10px', fontSize: 12.5, borderRadius: 10 }}>
+                          <div><strong style={{ fontWeight: 600 }}>{r.student.name}</strong> · #{r.student.roll_no} · {r.student.sport}/{r.student.batchLabel}</div>
                           <div style={{ marginTop: 5, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                            {r.insertCount > 0 && (
-                              <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: 'rgba(22,163,74,.12)', color: '#16a34a' }}>
-                                + {r.insertCount} new
-                              </span>
-                            )}
-                            {r.updateCount > 0 && (
-                              <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: 'rgba(217,119,6,.12)', color: '#d97706' }}>
-                                ↻ {r.updateCount} update
-                              </span>
-                            )}
-                            {r.unchangedCount > 0 && (
-                              <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: 'var(--card2)', color: 'var(--gray)' }}>
-                                = {r.unchangedCount} unchanged
-                              </span>
-                            )}
-                            {r.lockedCount > 0 && (
-                              <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: 'rgba(220,38,38,.12)', color: '#dc2626' }}>
-                                🔒 {r.lockedCount} register closed
-                              </span>
-                            )}
-                            {r.ineligibleCount > 0 && (
-                              <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: 'rgba(220,38,38,.12)', color: '#dc2626' }}>
-                                ⛔ {r.ineligibleCount} not eligible
-                              </span>
-                            )}
+                            {r.insertCount > 0 && <span style={chip('rgba(22,163,74,.12)', '#166534')}>+ {r.insertCount} new</span>}
+                            {r.updateCount > 0 && <span style={chip('rgba(217,119,6,.12)', '#92400E')}>{r.updateCount} update</span>}
+                            {r.unchangedCount > 0 && <span style={chip('var(--card2)', 'var(--gray)')}>{r.unchangedCount} unchanged</span>}
+                            {r.lockedCount > 0 && <span style={chip('rgba(220,38,38,.10)', '#B91C1C')}><Icon name="lock" size={11} stroke={2.4} /> {r.lockedCount} register closed</span>}
+                            {r.ineligibleCount > 0 && <span style={chip('rgba(220,38,38,.10)', '#B91C1C')}><Icon name="alert" size={11} stroke={2.4} /> {r.ineligibleCount} not eligible</span>}
                           </div>
                         </div>
                       ))}
                       {skippedRows.map((r, i) => (
-                        <div key={'s' + i} className="card" style={{ padding: 10, fontSize: 12.5, opacity: .75 }}>
-                          <strong>{r.label}</strong> — {r.reason}
-                          <span style={{ float: 'right', fontWeight: 700, color: 'var(--gray)' }}>Skipped</span>
+                        <div key={'s' + i} className="card" style={{ padding: '8px 10px', fontSize: 12.5, opacity: .75, borderRadius: 10, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{ minWidth: 0 }}><strong style={{ fontWeight: 600 }}>{r.label}</strong> — {r.reason}</div>
+                          <span style={rowChip('var(--gray)')}>Skipped</span>
                         </div>
                       ))}
                       {rejectedRows.map((r, i) => (
-                        <div key={'r' + i} className="card" style={{ padding: 10, fontSize: 12.5, opacity: .75 }}>
-                          <strong>{r.label}</strong> — {r.reason}
-                          <span style={{ float: 'right', fontWeight: 700, color: '#dc2626' }}>Rejected</span>
+                        <div key={'r' + i} className="card" style={{ padding: '8px 10px', fontSize: 12.5, opacity: .75, borderRadius: 10, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{ minWidth: 0 }}><strong style={{ fontWeight: 600 }}>{r.label}</strong> — {r.reason}</div>
+                          <span style={rowChip('#dc2626')}>Rejected</span>
                         </div>
                       ))}
                     </div>
@@ -465,27 +529,30 @@ export default function ImportAttendanceModal({ academyId, existingStudents, spo
         {preview && (preview.insertCount + preview.updateCount) > 0 && (
           <div style={{ borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--card2)' }}>
             {confirming && (
-              <div style={{ padding: '12px 16px 0' }}>
-                <div style={{ fontSize: 12.5, lineHeight: 1.6, background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.35)', borderRadius: 8, padding: '10px 12px' }}>
-                  ⚠️ This will save <strong>{preview.insertCount} new</strong> attendance record{preview.insertCount === 1 ? '' : 's'}
-                  {preview.updateCount > 0 && (
-                    <> and <strong>overwrite {preview.updateCount} existing</strong> record{preview.updateCount === 1 ? '' : 's'}</>
-                  )}. This can't be undone. Continue?
+              <div style={{ padding: '12px 14px 0' }}>
+                <div style={{ ...notice('rgba(245,158,11,.10)', 'rgba(245,158,11,.35)', '#92400E'), lineHeight: 1.6 }}>
+                  <span style={{ display: 'flex', marginTop: 2 }}><Icon name="alert" size={16} /></span>
+                  <span style={{ minWidth: 0 }}>
+                    This will save <strong>{preview.insertCount} new</strong> attendance record{preview.insertCount === 1 ? '' : 's'}
+                    {preview.updateCount > 0 && (
+                      <> and <strong>overwrite {preview.updateCount} existing</strong> record{preview.updateCount === 1 ? '' : 's'}</>
+                    )}. This can't be undone. Continue?
+                  </span>
                 </div>
               </div>
             )}
-            <div style={{ display: 'flex', gap: 10, padding: 16 }}>
+            <div style={{ display: 'flex', gap: 10, padding: 14 }}>
               {!confirming ? (
                 <>
-                  <button className="btn btn-outline" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
-                  <button className="btn btn-primary" style={{ flex: 1.4 }} onClick={() => setConfirming(true)}>
+                  <button className="btn btn-outline im-btn" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+                  <button className="btn btn-primary im-btn" style={{ flex: 1.4 }} onClick={() => setConfirming(true)}>
                     Review Import ({preview.insertCount + preview.updateCount})
                   </button>
                 </>
               ) : (
                 <>
-                  <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setConfirming(false)} disabled={submitting}>Back</button>
-                  <button className="btn btn-primary" style={{ flex: 1.4 }} onClick={submit} disabled={submitting}>
+                  <button className="btn btn-outline im-btn" style={{ flex: 1 }} onClick={() => setConfirming(false)} disabled={submitting}>Back</button>
+                  <button className="btn btn-primary im-btn" style={{ flex: 1.4 }} onClick={submit} disabled={submitting}>
                     {submitting ? 'Importing…' : `Confirm & Import ${preview.insertCount + preview.updateCount}`}
                   </button>
                 </>
@@ -494,8 +561,8 @@ export default function ImportAttendanceModal({ academyId, existingStudents, spo
           </div>
         )}
         {preview && (preview.insertCount + preview.updateCount) === 0 && (
-          <div style={{ display: 'flex', gap: 10, padding: 16, borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--card2)' }}>
-            <button className="btn btn-outline" style={{ flex: 1 }} onClick={onClose}>Close</button>
+          <div style={{ display: 'flex', gap: 10, padding: 14, borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--card2)' }}>
+            <button className="btn btn-outline im-btn" style={{ flex: 1 }} onClick={onClose}>Close</button>
           </div>
         )}
       </div>
