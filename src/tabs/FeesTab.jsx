@@ -62,6 +62,7 @@ const ICONS = {
   wallet: <><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></>,
   fileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /><path d="M10 9H8" /></>,
   sheet: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6" /><path d="M8 13h2" /><path d="M14 13h2" /><path d="M8 17h2" /><path d="M14 17h2" /></>,
+  download: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M4 17v3h16v-3" /></>,
   upload: <><path d="M12 15V3" /><path d="m7 8 5-5 5 5" /><path d="M4 17v3h16v-3" /></>,
   lock: <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>,
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></>,
@@ -80,6 +81,8 @@ const ICONS = {
   checkCircle: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" /></>,
   xCircle: <><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></>,
   clock: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>,
+  unlock: <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></>,
+  minusCircle: <><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /></>,
   award: <><circle cx="12" cy="8" r="6" /><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" /></>,
 };
 
@@ -112,6 +115,10 @@ const FEES_CSS = `
 @keyframes fe-pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .fe-overlay{animation:fe-fade .15s ease}
 .fe-sheet,.fe-panel{animation:fe-pop .16s ease}
+.fe-input{width:100%;height:40px;box-sizing:border-box;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:var(--card2);font-size:14px;color:#182238;font-family:inherit;outline:none;transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
+.fe-input:focus{border-color:#5B7CC4;box-shadow:0 0 0 3px rgba(91,124,196,.18);background:#fff}
+.fe-input[readonly]{opacity:.75}
+.fe-seg:hover:not([aria-pressed="true"]){border-color:#9DB2DD}
 @media (prefers-reduced-motion:reduce){.fe-btn,.fe-search,.fe-card,.fe-overlay,.fe-sheet,.fe-panel{animation:none !important;transition:none !important}}
 `;
 
@@ -261,15 +268,58 @@ function canEditFee(fee, isAdmin) {
   return feeStatus(fee) !== 'paid';
 }
 
+// ---- Shared pieces for the payment popups (presentation only) ----
+const feModalOverlay = { position: 'fixed', inset: 0, background: 'rgba(10,18,35,.5)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 };
+const feModalSheet = { background: '#fff', borderRadius: 16, padding: '16px 16px 14px', width: '100%', maxWidth: 400, maxHeight: 'min(90vh, 680px)', overflowY: 'auto', boxShadow: '0 12px 32px rgba(10,18,35,.24)' };
+const feInfoBox = { background: '#F5F7FC', border: '1px solid #E3E9F5', borderRadius: 12, padding: '10px 12px', marginBottom: 12, fontSize: 12.5 };
+
+function ModalHeader({ title, subtitle, onClose }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1A336A', minWidth: 0 }}>
+          <Icon name="wallet" size={20} />
+          <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-.01em', overflowWrap: 'anywhere' }}>{title}</span>
+        </div>
+        <button type="button" className="fe-btn" onClick={onClose} aria-label="Close" style={{ width: 28, height: 28, borderRadius: '50%', background: '#F1F3F8', border: 'none', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Icon name="x" size={15} />
+        </button>
+      </div>
+      {subtitle && <div style={{ fontSize: 12.5, color: 'var(--gray)', marginTop: 4 }}>{subtitle}</div>}
+    </div>
+  );
+}
+
+function ModalError({ children }) {
+  return (
+    <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'rgba(220,38,38,.08)', border: '1px solid rgba(220,38,38,.28)', color: '#B91C1C', borderRadius: 10, padding: '8px 10px', fontSize: 12.5, marginBottom: 10 }}>
+      <span style={{ display: 'flex', marginTop: 1 }}><Icon name="alert" size={15} /></span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function ModalFooter({ onCancel, onSave, saving }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+      <button type="button" className="fe-btn fe-msg" onClick={onCancel} style={{ flex: 1, height: 44, border: '1px solid #C5D0EA', borderRadius: 12, background: '#fff', color: '#1A336A', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+      <button type="button" className="fe-btn fe-pay" onClick={onSave} disabled={saving} style={{ flex: 2, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, border: '1px solid #1A336A', borderRadius: 12, background: '#1A336A', color: '#fff', fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
+        {!saving && <Icon name="checkCircle" size={17} />}
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+    </div>
+  );
+}
+
 // One form line with the label on the left and its input on the right
 // (e.g. "Total Amount Due ₹ ........ 600"). `hint` is a small grey line
 // under the label; `boxWidth` sets how wide the right-hand box is.
 function FieldRow({ label, hint, boxWidth = 140, children }) {
   return (
-    <div className="form-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-      <label className="form-label" style={{ flex: 1, minWidth: 0, marginBottom: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+      <label style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#182238' }}>
         {label}
-        {hint && <div style={{ fontSize: 10.5, fontWeight: 400, color: 'var(--gray)', marginTop: 2 }}>{hint}</div>}
+        {hint && <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray)', marginTop: 2 }}>{hint}</div>}
       </label>
       <div style={{ width: boxWidth, flexShrink: 0 }}>{children}</div>
     </div>
@@ -445,45 +495,57 @@ function FeeEntryModal({ student, monthKey, monthLabel, sport, batchLabel, fee, 
     }
   };
 
+  const payTypeBtn = (key, label, icon, activeBg) => {
+    const on = payType === key;
+    return (
+      <button
+        type="button"
+        className="fe-btn fe-seg"
+        aria-pressed={on}
+        onClick={() => setPayType(key)}
+        style={{ flex: 1, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, borderRadius: 10, border: `1px solid ${on ? activeBg : 'var(--border)'}`, background: on ? activeBg : 'var(--card2)', color: on ? '#fff' : '#1A336A', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: '0 4px', whiteSpace: 'nowrap' }}
+      >
+        <Icon name={icon} size={15} />{label}
+      </button>
+    );
+  };
+
   return (
-    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 400 }}>
-        <div className="modal-title">
-          <span>💰 {student.name}</span>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
+    <div className="fe-overlay" style={feModalOverlay} onClick={e => e.target === e.currentTarget && onClose()} role="dialog" aria-modal="true" aria-label={`Fee payment for ${student.name}`}>
+      <div className="fe-sheet" style={feModalSheet}>
+        <ModalHeader
+          title={student.name}
+          subtitle={`${monthLabel} · ${sport}${batchLabel ? ` · ${batchLabel}` : ''}`}
+          onClose={onClose}
+        />
 
-        {error && <div style={{ color: 'var(--red)', fontSize: 12, marginBottom: 8 }}>{error}</div>}
-
-        <div style={{ fontSize: 12, color: 'var(--gray)', marginBottom: 10 }}>
-          {monthLabel} · {sport}{batchLabel ? ` · ${batchLabel}` : ''}
-        </div>
+        {error && <ModalError>{error}</ModalError>}
 
         {!isFirstEntry && (
-          <div style={{ background: 'var(--card2)', borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12 }}>
+          <div style={feInfoBox}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ color: 'var(--gray)' }}>Total Due</span><span>₹{due}</span>
+              <span style={{ color: 'var(--gray)' }}>Total Due</span><span style={{ fontWeight: 600 }}>₹{due}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ color: 'var(--gray)' }}>Paid So Far</span><span>₹{paidSoFar}</span>
+              <span style={{ color: 'var(--gray)' }}>Paid So Far</span><span style={{ fontWeight: 600 }}>₹{paidSoFar}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-              <span>Remaining</span><span style={{ color: remaining > 0 ? 'var(--red)' : 'var(--green)' }}>₹{remaining}</span>
+              <span>Remaining</span><span style={{ color: remaining > 0 ? '#B91C1C' : '#166534' }}>₹{remaining}</span>
             </div>
             {lastPayment && (
-              <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.1)', color: 'var(--gray)' }}>
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #E3E9F5', color: 'var(--gray)', fontSize: 12 }}>
                 Last payment: ₹{lastPayment.amount} · {lastPayment.method} · {lastPayment.by}
                 {lastPayment.at && <> · {new Date(lastPayment.at).toLocaleDateString()}</>}
                 {lastPayment.transaction_id && <div style={{ marginTop: 2 }}>{lastPayment.transaction_id}</div>}
-                {lastPayment.note && <div style={{ marginTop: 2, fontStyle: 'italic' }}>📝 {lastPayment.note}</div>}
+                {lastPayment.note && <div style={{ marginTop: 2, fontStyle: 'italic' }}>Note: {lastPayment.note}</div>}
               </div>
             )}
           </div>
         )}
 
         {locked ? (
-          <div style={{ fontSize: 12, color: 'var(--gray)', marginBottom: 10 }}>
-            🔒 This fee is fully paid. Only an admin can reopen it.
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--gray)', marginBottom: 12 }}>
+            <Icon name="lock" size={16} /> This fee is fully paid. Only an admin can reopen it.
           </div>
         ) : (
           <>
@@ -492,37 +554,23 @@ function FeeEntryModal({ student, monthKey, monthLabel, sport, batchLabel, fee, 
                 label="Total Amount Due ₹"
                 hint={batchDefaultFee != null ? `Batch default: ₹${batchDefaultFee.toLocaleString('en-IN')}` : null}
               >
-                <input type="number" min="1" className="form-input" style={{ textAlign: 'right' }} value={totalDue} onChange={e => setTotalDue(e.target.value)} placeholder="e.g. 300" />
+                <input type="number" min="1" className="fe-input" style={{ textAlign: 'right' }} value={totalDue} onChange={e => setTotalDue(e.target.value)} placeholder="e.g. 300" />
               </FieldRow>
             )}
 
-            <div className="form-group">
-                <label className="form-label">Payment Type</label>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ flex: 1, padding: '7px 0', fontSize: 12, fontWeight: 700, background: payType === 'full' ? 'var(--accent2)' : 'var(--card2)', color: payType === 'full' ? '#fff' : 'var(--gray)' }}
-                    onClick={() => setPayType('full')}
-                  >💯 Full</button>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ flex: 1, padding: '7px 0', fontSize: 12, fontWeight: 700, background: payType === 'partial' ? 'var(--accent2)' : 'var(--card2)', color: payType === 'partial' ? '#fff' : 'var(--gray)' }}
-                    onClick={() => setPayType('partial')}
-                  >➗ Partial</button>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ flex: 1, padding: '7px 0', fontSize: 12, fontWeight: 700, background: payType === 'scholarship' ? 'var(--gold, #e0a020)' : 'var(--card2)', color: payType === 'scholarship' ? '#fff' : 'var(--gray)' }}
-                    onClick={() => setPayType('scholarship')}
-                  >🎓 Scholarship</button>
-                </div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#182238', marginBottom: 6 }}>Payment Type</div>
+              <div role="group" aria-label="Payment type" style={{ display: 'flex', gap: 6 }}>
+                {payTypeBtn('full', 'Full', 'checkCircle', '#1A336A')}
+                {payTypeBtn('partial', 'Partial', 'minusCircle', '#1A336A')}
+                {payTypeBtn('scholarship', 'Scholarship', 'award', '#6D28D9')}
               </div>
+            </div>
 
             {payType === 'scholarship' ? (
-              <div style={{ background: 'rgba(230,160,20,0.12)', border: '1px solid rgba(230,160,20,0.4)', borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12, color: 'var(--gold, #e0a020)' }}>
-                🎓 This student is on scholarship — no payment is required. This fee will be marked fully settled with ₹0 collected.
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.28)', borderRadius: 12, padding: '10px 12px', marginBottom: 12, fontSize: 12.5, color: '#5B21B6' }}>
+                <span style={{ display: 'flex', marginTop: 1 }}><Icon name="award" size={16} /></span>
+                <span>This student is on scholarship — no payment is required. This fee will be marked fully settled with ₹0 collected.</span>
               </div>
             ) : (
               <>
@@ -531,7 +579,7 @@ function FeeEntryModal({ student, monthKey, monthLabel, sport, batchLabel, fee, 
                   hint={isFirstEntry ? 'Leave blank if none yet' : `Remaining ₹${remaining}`}
                 >
                   <input
-                    type="number" min={isFirstEntry ? '0' : '1'} className="form-input" style={{ textAlign: 'right' }} value={payNow}
+                    type="number" min={isFirstEntry ? '0' : '1'} className="fe-input" style={{ textAlign: 'right' }} value={payNow}
                     onChange={e => { setPayNow(e.target.value); setPayType('partial'); }}
                     placeholder="Amount"
                     readOnly={payType === 'full'}
@@ -541,7 +589,7 @@ function FeeEntryModal({ student, monthKey, monthLabel, sport, batchLabel, fee, 
                 {(isFirstEntry ? parseInt(payNow, 10) > 0 : true) && (
                   <>
                     <FieldRow label="Payment Method">
-                      <select className="form-select" value={method} onChange={e => setMethod(e.target.value)}>
+                      <select className="fe-input" value={method} onChange={e => setMethod(e.target.value)}>
                         <option value="cash">Cash</option>
                         <option value="upi">UPI</option>
                         <option value="card">Card</option>
@@ -550,13 +598,13 @@ function FeeEntryModal({ student, monthKey, monthLabel, sport, batchLabel, fee, 
                     </FieldRow>
 
                     <FieldRow label="Transaction ID" hint="Auto-generated" boxWidth={190}>
-                      <input type="text" className="form-input" value={txnId} readOnly style={{ opacity: 0.75, fontSize: 12, textAlign: 'right' }} />
+                      <input type="text" className="fe-input" value={txnId} readOnly style={{ fontSize: 12, textAlign: 'right' }} />
                     </FieldRow>
 
-                    <div className="form-group">
-                      <label className="form-label">Note (optional)</label>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#182238', marginBottom: 6 }}>Note (optional)</div>
                       <input
-                        type="text" maxLength={100} className="form-input" value={note}
+                        type="text" maxLength={100} className="fe-input" value={note}
                         onChange={e => setNote(e.target.value)}
                         placeholder="e.g. Paid by father, balance next week"
                       />
@@ -569,20 +617,20 @@ function FeeEntryModal({ student, monthKey, monthLabel, sport, batchLabel, fee, 
         )}
 
         {fee?.collected_by && (
-          <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 8 }}>Last saved by: {fee.collected_by}</div>
+          <div style={{ fontSize: 11.5, color: 'var(--gray)', marginBottom: 8 }}>Last saved by: {fee.collected_by}</div>
         )}
 
         {isAdmin && status !== 'unpaid' && !confirmReset && (
-          <button className="btn" style={{ width: '100%', fontSize: 11, color: 'var(--red)', background: 'transparent', border: '1px solid var(--red)', marginBottom: 8 }} onClick={() => setConfirmReset(true)}>
-            🔓 Admin: Reset to Unpaid
+          <button type="button" className="fe-btn" style={{ width: '100%', height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, color: '#B91C1C', background: 'transparent', border: '1px solid rgba(220,38,38,.35)', borderRadius: 10, marginBottom: 8, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setConfirmReset(true)}>
+            <Icon name="unlock" size={15} /> Admin: Reset to Unpaid
           </button>
         )}
         {confirmReset && (
-          <div style={{ fontSize: 11, marginBottom: 8, color: 'var(--red)' }}>
+          <div style={{ fontSize: 12.5, marginBottom: 8, color: '#B91C1C', background: 'rgba(220,38,38,.06)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 10, padding: '10px 12px' }}>
             This clears all recorded payments for this entry. Are you sure?
-            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-              <button className="btn" style={{ flex: 1 }} onClick={() => setConfirmReset(false)}>Cancel</button>
-              <button className="btn" style={{ flex: 1, background: 'var(--red)', color: '#fff' }} onClick={resetToUnpaid} disabled={saving}>Confirm Reset</button>
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <button type="button" className="fe-btn fe-msg" style={{ flex: 1, height: 36, border: '1px solid #C5D0EA', borderRadius: 10, background: '#fff', color: '#1A336A', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setConfirmReset(false)}>Cancel</button>
+              <button type="button" className="fe-btn" style={{ flex: 1, height: 36, border: '1px solid #DC2626', borderRadius: 10, background: '#DC2626', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }} onClick={resetToUnpaid} disabled={saving}>Confirm Reset</button>
             </div>
           </div>
         )}
@@ -590,21 +638,15 @@ function FeeEntryModal({ student, monthKey, monthLabel, sport, batchLabel, fee, 
         {!locked && onMultiMonth && payType !== 'scholarship' && (
           <button
             type="button"
+            className="fe-btn fe-chip"
             onClick={onMultiMonth}
-            style={{ width: '100%', background: 'none', border: '1px dashed var(--border)', borderRadius: 8, padding: '7px 0', marginBottom: 8, fontSize: 12, fontWeight: 600, color: 'var(--accent2)', cursor: 'pointer' }}
+            style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: '1px dashed #9DB2DD', borderRadius: 10, marginBottom: 10, fontSize: 13, fontWeight: 600, color: '#1A336A', cursor: 'pointer', fontFamily: 'inherit' }}
           >
-            📅 Paying for multiple months?
+            <Icon name="calendar" size={16} /> Paying for multiple months?
           </button>
         )}
 
-        {!locked && (
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-            <button className="btn" style={{ flex: 1, background: 'var(--card2)' }} onClick={onClose}>Cancel</button>
-            <button className="btn btn-primary" style={{ flex: 2 }} onClick={save} disabled={saving}>
-              {saving ? 'Saving…' : '💾 Save'}
-            </button>
-          </div>
-        )}
+        {!locked && <ModalFooter onCancel={onClose} onSave={save} saving={saving} />}
       </div>
     </div>
   );
@@ -730,32 +772,30 @@ function MultiMonthModal({ student, sport, batchLabel, months, startMonthKey, de
   };
 
   return (
-    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 400, maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className="modal-title">
-          <span>📅 {student.name}</span>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--gray)', marginBottom: 10 }}>
-          {sport}{batchLabel ? ` · ${batchLabel}` : ''} · pay several months at once
-        </div>
+    <div className="fe-overlay" style={feModalOverlay} onClick={e => e.target === e.currentTarget && onClose()} role="dialog" aria-modal="true" aria-label={`Multi-month payment for ${student.name}`}>
+      <div className="fe-sheet" style={feModalSheet}>
+        <ModalHeader
+          title={student.name}
+          subtitle={`${sport}${batchLabel ? ` · ${batchLabel}` : ''} · pay several months at once`}
+          onClose={onClose}
+        />
 
-        {error && <div style={{ color: 'var(--red)', fontSize: 12, marginBottom: 8 }}>{error}</div>}
-        {!existing && <div style={{ fontSize: 12, color: 'var(--gray)', padding: '10px 0' }}>Loading…</div>}
+        {error && <ModalError>{error}</ModalError>}
+        {!existing && <div style={{ fontSize: 13, color: 'var(--gray)', padding: '10px 0' }}>Loading…</div>}
 
         {existing && (
           <>
-            <div className="form-label" style={{ marginBottom: 4 }}>Months to pay</div>
-            <div style={{ maxHeight: 190, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, padding: '2px 10px', marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#182238', marginBottom: 6 }}>Months to pay</div>
+            <div style={{ maxHeight: 190, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 12, padding: '2px 12px', marginBottom: 12 }}>
               {months.map(mk => {
                 const ex = existing[mk];
                 const due = ex?.amount_due ? parseInt(ex.amount_due, 10) : null;
                 const paid = ex?.amount ? parseInt(ex.amount, 10) : 0;
                 return (
-                  <label key={mk} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '1px solid var(--border)', fontSize: 12.5, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={selected.has(mk)} onChange={() => toggle(mk)} />
-                    <span style={{ flex: 1, fontWeight: 600 }}>{monthKeyLabel(mk)}</span>
-                    <span style={{ fontSize: 11, color: 'var(--gray)' }}>
+                  <label key={mk} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 40, padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 13, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={selected.has(mk)} onChange={() => toggle(mk)} style={{ width: 18, height: 18, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' }} />
+                    <span style={{ flex: 1, fontWeight: 600, color: '#182238' }}>{monthKeyLabel(mk)}</span>
+                    <span style={{ fontSize: 11.5, color: 'var(--gray)' }}>
                       {due != null ? (paid > 0 ? `₹${paid} of ₹${due} paid` : `₹${due} due`) : 'no entry yet'}
                     </span>
                   </label>
@@ -764,38 +804,38 @@ function MultiMonthModal({ student, sport, batchLabel, months, startMonthKey, de
             </div>
 
             <FieldRow label="Amount per month ₹" hint="For months with no amount set yet">
-              <input type="number" min="1" className="form-input" style={{ textAlign: 'right' }} value={perMonth} onChange={e => setPerMonth(e.target.value)} placeholder="e.g. 500" />
+              <input type="number" min="1" className="fe-input" style={{ textAlign: 'right' }} value={perMonth} onChange={e => setPerMonth(e.target.value)} placeholder="e.g. 500" />
             </FieldRow>
 
             <FieldRow label="Total received ₹" hint={sumRemaining > 0 ? `Selected months need ₹${sumRemaining}` : null}>
               <input
-                type="number" min="1" className="form-input" style={{ textAlign: 'right' }} value={total}
+                type="number" min="1" className="fe-input" style={{ textAlign: 'right' }} value={total}
                 onChange={e => { setTotal(e.target.value); setTotalTouched(true); }}
                 placeholder="Amount"
               />
             </FieldRow>
 
             {alloc.length > 0 && (parseInt(total, 10) || 0) > 0 && (
-              <div style={{ background: 'var(--card2)', borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12 }}>
+              <div style={feInfoBox}>
                 <div style={{ color: 'var(--gray)', marginBottom: 4 }}>How it will be applied</div>
                 {alloc.map(a => {
                   const newPaid = a.paid + a.pay;
                   const st = a.pay === 0 ? 'unchanged' : (newPaid >= a.due ? 'Paid' : `Partial · ₹${newPaid} of ₹${a.due}`);
                   return (
-                    <div key={a.mk} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                    <div key={a.mk} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '2px 0' }}>
                       <span>{monthKeyLabel(a.mk)}</span>
-                      <span style={{ color: a.pay === 0 ? 'var(--gray)' : (st === 'Paid' ? 'var(--green)' : '#e0a020') }}>
+                      <span style={{ fontWeight: 600, color: a.pay === 0 ? 'var(--gray)' : (st === 'Paid' ? '#166534' : '#92400E') }}>
                         {a.pay > 0 ? `₹${a.pay} → ` : ''}{st}
                       </span>
                     </div>
                   );
                 })}
-                {leftover > 0 && <div style={{ color: 'var(--red)', marginTop: 4 }}>₹{leftover} more than these months need — select more months.</div>}
+                {leftover > 0 && <div style={{ color: '#B91C1C', marginTop: 4 }}>₹{leftover} more than these months need — select more months.</div>}
               </div>
             )}
 
             <FieldRow label="Payment Method">
-              <select className="form-select" value={method} onChange={e => setMethod(e.target.value)}>
+              <select className="fe-input" value={method} onChange={e => setMethod(e.target.value)}>
                 <option value="cash">Cash</option>
                 <option value="upi">UPI</option>
                 <option value="card">Card</option>
@@ -803,17 +843,12 @@ function MultiMonthModal({ student, sport, batchLabel, months, startMonthKey, de
               </select>
             </FieldRow>
 
-            <div className="form-group">
-              <label className="form-label">Note (optional)</label>
-              <input type="text" maxLength={100} className="form-input" value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Paid 3 months in advance" />
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#182238', marginBottom: 6 }}>Note (optional)</div>
+              <input type="text" maxLength={100} className="fe-input" value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Paid 3 months in advance" />
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              <button className="btn" style={{ flex: 1, background: 'var(--card2)' }} onClick={onClose}>Cancel</button>
-              <button className="btn btn-primary" style={{ flex: 2 }} onClick={save} disabled={saving}>
-                {saving ? 'Saving…' : '💾 Save'}
-              </button>
-            </div>
+            <ModalFooter onCancel={onClose} onSave={save} saving={saving} />
           </>
         )}
       </div>
@@ -851,6 +886,7 @@ export default function FeesTab() {
   const [sendModal, setSendModal] = useState(null);
   const [entryModal, setEntryModal] = useState(null); // { student, monthKey, monthLabel, sport, fee }
   const [showImport, setShowImport] = useState(false);
+  const [showDownload, setShowDownload] = useState(false); // PDF / Excel chooser
 
   // A row's `month` key is fine to compare lexically ('2026-01' <= '2026-08')
   // since it's always YYYY-MM. Used both for the scoped fetch below and to
@@ -1336,7 +1372,7 @@ export default function FeesTab() {
   if (!canViewFees) {
     return (
       <div className="page active" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 24, textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 10 }}>🔒</div>
+        <div style={{ display: 'flex', color: 'var(--gray)', marginBottom: 10 }}><Icon name="lock" size={32} stroke={1.75} /></div>
         <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>No access to Fees</div>
         <div style={{ fontSize: 12.5, color: 'var(--gray)' }}>Ask an admin to grant you access to this tab.</div>
       </div>
@@ -1364,10 +1400,7 @@ export default function FeesTab() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
           {canExportFees && hasFeature('has_reports') && (
-            <>
-              <button type="button" className="fe-btn fe-round" style={roundIconBtn(false)} aria-label="Export fees as PDF" title="Export PDF" onClick={() => exportGenericPdf('Fees Report', exportColumns, exportRows.map(row => exportColumns.map(c => row[c])), 'fees.pdf')}><Icon name="fileText" size={18} /></button>
-              <button type="button" className="fe-btn fe-round" style={roundIconBtn(false)} aria-label="Export fees as Excel" title="Export Excel" onClick={() => exportGenericXlsx(exportRows, 'fees.xlsx', 'Fees')}><Icon name="sheet" size={18} /></button>
-            </>
+            <button type="button" className="fe-btn fe-round" style={roundIconBtn(false)} aria-label="Download fees" title="Download" onClick={() => setShowDownload(true)}><Icon name="download" size={18} /></button>
           )}
           {canExportFees && !hasFeature('has_reports') && (() => {
             const target = cheapestPlanWithFeature('has_reports');
@@ -1729,6 +1762,25 @@ export default function FeesTab() {
             setMultiModal(null);
           }}
         />
+      )}
+
+      {showDownload && (
+        <FilterPopup title="Download as" onClose={() => setShowDownload(false)}>
+          {[
+            ['pdf', 'fileText', 'PDF', () => exportGenericPdf('Fees Report', exportColumns, exportRows.map(row => exportColumns.map(c => row[c])), 'fees.pdf')],
+            ['xlsx', 'sheet', 'Excel', () => exportGenericXlsx(exportRows, 'fees.xlsx', 'Fees')],
+          ].map(([kind, icon, label, run]) => (
+            <button
+              key={kind}
+              type="button"
+              className="fe-btn fe-chip"
+              onClick={() => { setShowDownload(false); run(); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 48, padding: '10px 12px', margin: '4px 0', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--card2)', color: '#1A336A', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              <span style={{ display: 'flex', color: '#1A336A' }}><Icon name={icon} size={20} /></span> {label}
+            </button>
+          ))}
+        </FilterPopup>
       )}
 
       {showImport && (
