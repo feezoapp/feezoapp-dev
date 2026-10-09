@@ -1490,59 +1490,35 @@ export default function AttendanceTab() {
           );
         })}
 
-        {!loading && isAdmin && viewMode === 'day' && !isFutureDate && students.length > 0 && (
-          !sportFilter || !batchFilter ? (
-            <div style={{ fontSize: 12, color: 'var(--graydk)', marginTop: 10, padding: '9px 10px', background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <span style={{ display: 'flex', color: '#5B7CC4', marginTop: 1 }}><Icon name="info" size={15} /></span>
-              <span>Pick a specific <b>sport</b> and <b>batch</b> above to close its register (Done) and flag latecomers.</span>
+      </div>
+      {/* Pinned action bar — only once a specific sport AND batch are selected */}
+      {!loading && viewMode === 'day' && !isFutureDate && students.length > 0 && sportFilter && batchFilter && (
+        <div style={{ flexShrink: 0, padding: '8px 2px 6px', background: 'var(--bg, #fff)', borderTop: '1px solid var(--border)' }}>
+          <button className="btn at-btn" style={{ width: '100%', padding: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, background: '#fff', color: '#1A336A', border: '1.5px solid #1A336A' }} onClick={submitOk} disabled={savingCheck}>
+            <Icon name="checkCircle" size={17} /> {savingCheck ? 'Saving…' : 'Save — Record Present / Absent'}
+          </button>
+          {submissions[0] && (
+            <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 4, padding: '0 4px' }}>
+              Last recorded {fmtDateTime(submissions[0].submitted_at)} — P {submissions[0].present_count} · A {submissions[0].absent_count} · Pending {submissions[0].pending_count}
             </div>
-          ) : dayCompleted ? (
+          )}
+          {isAdmin && (dayCompleted ? (
             <>
-              <button className="btn at-btn" style={{ width: '100%', marginTop: 10, padding: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, background: '#fff', color: '#1A336A', border: '1.5px solid #1A336A' }} onClick={submitOk} disabled={savingCheck || isFutureDate || !students.length}>
-                <Icon name="checkCircle" size={17} /> {savingCheck ? 'Saving…' : 'OK — Record Present / Absent'}
-              </button>
-              {submissions[0] && (
-                <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 5, padding: '0 4px' }}>
-                  Last recorded {fmtDateTime(submissions[0].submitted_at)} — P {submissions[0].present_count} · A {submissions[0].absent_count} · Pending {submissions[0].pending_count}
-                </div>
-              )}
-              <button className="btn at-btn" disabled style={{ width: '100%', marginTop: 10, padding: 12, background: 'var(--card2)', color: 'var(--gray)', border: '1px solid var(--border)', cursor: 'not-allowed', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
+              <button className="btn at-btn" disabled style={{ width: '100%', marginTop: 8, padding: 11, background: 'var(--card2)', color: 'var(--gray)', border: '1px solid var(--border)', cursor: 'not-allowed', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
                 <Icon name="lock" size={16} /> Register Closed
               </button>
-              <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 5, padding: '0 4px' }}>
-                Closed for {sportFilter} / {batchFilter}. Marked students are locked; new Present marks show as latecomers.
-              </div>
-              {isAdmin && (
-                <button
-                  className="btn at-btn"
-                  onClick={unlockRegister}
-                  disabled={unlocking}
-                  style={{ width: '100%', marginTop: 8, padding: 10, background: 'transparent', color: '#DC2626', border: '1px solid rgba(220,38,38,.35)', fontWeight: 600, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}
-                >
-                  <Icon name="unlock" size={15} /> {unlocking ? 'Reopening…' : 'Reopen Register (requires reason)'}
-                </button>
-              )}
+              <button className="btn at-btn" onClick={unlockRegister} disabled={unlocking}
+                style={{ width: '100%', marginTop: 6, padding: 9, background: 'transparent', color: '#DC2626', border: '1px solid rgba(220,38,38,.35)', fontWeight: 600, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
+                <Icon name="unlock" size={15} /> {unlocking ? 'Reopening…' : 'Reopen Register (requires reason)'}
+              </button>
             </>
           ) : (
-            <>
-              <button className="btn at-btn" style={{ width: '100%', marginTop: 10, padding: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, background: '#fff', color: '#1A336A', border: '1.5px solid #1A336A' }} onClick={submitOk} disabled={savingCheck || isFutureDate || !students.length}>
-                <Icon name="checkCircle" size={17} /> {savingCheck ? 'Saving…' : 'OK — Record Present / Absent'}
-              </button>
-              {submissions[0] && (
-                <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 5, padding: '0 4px' }}>
-                  Last recorded {fmtDateTime(submissions[0].submitted_at)} — P {submissions[0].present_count} · A {submissions[0].absent_count} · Pending {submissions[0].pending_count}
-                </div>
-              )}
-              <button className="btn btn-primary at-btn" style={{ width: '100%', marginTop: 10, padding: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }} onClick={markAllDone} disabled={completing}>
-                <Icon name="checkCircle" size={17} /> {completing ? 'Marking…' : 'Done — Close Register'}
-              </button>
-              <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 5, padding: '0 4px' }}>
-                Tap P/A again to clear a mark. Closing locks in {sportFilter}'s attendance for the day.
-              </div>
-            </>
-          )
-        )}
-      </div>
+            <button className="btn btn-primary at-btn" style={{ width: '100%', marginTop: 8, padding: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }} onClick={markAllDone} disabled={completing}>
+              <Icon name="checkCircle" size={17} /> {completing ? 'Marking…' : 'Done — Close Register'}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Scroll-to-bottom: jumps the list to its end (same behaviour as before) */}
       <button
