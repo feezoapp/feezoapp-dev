@@ -933,6 +933,56 @@ export default function AttendanceTab() {
   const absentCount = students.filter(r => records[r.key] === 'A').length;
   const notMarkedCount = students.length - presentCount - absentCount;
 
+  // ── OK check-in: snapshot of present / absent / pending with date + time ──
+  // Saved to `attendance_submissions` (see attendance_submissions.sql).
+  const [savingCheck, setSavingCheck] = useState(false);
+  const [listPopup, setListPopup] = useState(null); // 'P' | 'A' | 'N' | null
+  const [selSubId, setSelSubId] = useState(null); // null = live list, else a saved check's id
+  const [submissions, setSubmissions] = useState([]);
+  const [subReload, setSubReload] = useState(0);
+
+  useEffect(() => {
+    if (!academyId || viewMode !== 'day' || !sportFilter || !batchFilter) { setSubmissions([]); return; }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.from('attendance_submissions')
+        .select('id,submitted_at,submitted_by_name,present_count,absent_count,pending_count,present_students,absent_students,pending_students')
+        .eq('academy_id', academyId).eq('date', date).eq('sport', sportFilter).eq('batch', batchFilter)
+        .order('submitted_at', { ascending: false });
+      if (!cancelled) setSubmissions(error ? [] : (data || []));
+    })();
+    return () => { cancelled = true; };
+  }, [academyId, date, sportFilter, batchFilter, viewMode, subReload]);
+
+  const fmtDateTime = (iso) => new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+  const snapshotOf = (code) => students
+    .filter(r => (code === 'N' ? !records[r.key] : records[r.key] === code))
+    .map(r => ({ id: r.student.id, name: r.student.name || '', roll_no: r.student.roll_no || '' }));
+
+  const submitOk = async () => {
+    if (!sportFilter || !batchFilter) { window.alert('Pick a specific sport and batch above first.'); return; }
+    if (!students.length || isFutureDate) return;
+    setSavingCheck(true);
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase.from('attendance_submissions').insert({
+        academy_id: academyId, date, sport: sportFilter, batch: batchFilter,
+        submitted_at: now,
+        submitted_by_id: appUser?.id || user?.id || null,
+        submitted_by_name: markedBy,
+        present_count: presentCount, absent_count: absentCount, pending_count: notMarkedCount,
+        present_students: snapshotOf('P'), absent_students: snapshotOf('A'), pending_students: snapshotOf('N'),
+      });
+      if (error) throw error;
+      logAttendance(`Attendance check recorded (${sportFilter} / ${batchFilter}) for ${date}: ${presentCount} present, ${absentCount} absent, ${notMarkedCount} pending`);
+      setSubReload(k => k + 1);
+      window.alert(`Recorded at ${fmtDateTime(now)}\nPresent: ${presentCount} · Absent: ${absentCount} · Pending: ${notMarkedCount}`);
+    } catch (err) {
+      window.alert(`Couldn't save the attendance check: ${err.message}`);
+    }
+    setSavingCheck(false);
+  };
+
   const dateLabel = `${day} ${WEEKDAYS[dateObj.getDay()]}, ${MONTHS[month]} ${year}`;
 
   // ---- Export ----
@@ -1042,10 +1092,12 @@ export default function AttendanceTab() {
     border: `1px solid ${on ? accent : 'var(--border)'}`, background: on ? `${accent}14` : 'var(--card)',
     color: on ? accent : '#1A336A', fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'background-color .15s ease, border-color .15s ease',
   });
-  const statTile = (icon, n, label, color) => (
-    <div title={label} aria-label={`${label}: ${n}`} role="img" style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, color, fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>
+  const statTile = (icon, n, label, color, code) => (
+    <button type="button" className="at-btn" title={`${label} — tap to see list`} aria-label={`${label}: ${n}. Show list`}
+      onClick={() => { setSelSubId(null); setListPopup(code); }}
+      style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, color, fontWeight: 700, fontSize: 15, lineHeight: 1.2, background: 'none', border: 'none', padding: '4px 2px', cursor: 'pointer', fontFamily: 'inherit' }}>
       <Icon name={icon} size={15} /> {n}
-    </div>
+    </button>
   );
 
   return (
@@ -1166,18 +1218,18 @@ export default function AttendanceTab() {
 
       {popup === 'sport' && (
         <FilterPopup title="Select Sport" onClose={() => setPopup(null)}>
-          <RadioRow name="sportsel" checked={!sportFilter} onChange={() => { setSportFilter(''); setBatchFilter(''); setPopup(null); }} label="All Sports" />
+          <RadioRow name="sportsel" checked={!sportFilter} onChange={() => { setSportFilter(''); setBatchFilter(''); setPopup(null); setPanelOpen(false); }} label="All Sports" />
           {visibleSports.map(s => (
-            <RadioRow key={s.id} name="sportsel" checked={sportFilter === s.name} onChange={() => { setSportFilter(s.name); setBatchFilter(''); setPopup(null); }} label={s.name} />
+            <RadioRow key={s.id} name="sportsel" checked={sportFilter === s.name} onChange={() => { setSportFilter(s.name); setBatchFilter(''); setPopup(null); setPanelOpen(false); }} label={s.name} />
           ))}
         </FilterPopup>
       )}
 
       {popup === 'batch' && (
         <FilterPopup title="Select Batch" onClose={() => setPopup(null)}>
-          <RadioRow name="batchsel" checked={!batchFilter} onChange={() => { setBatchFilter(''); setPopup(null); }} label="All Batches" />
+          <RadioRow name="batchsel" checked={!batchFilter} onChange={() => { setBatchFilter(''); setPopup(null); setPanelOpen(false); }} label="All Batches" />
           {batchesForSport.map(b => (
-            <RadioRow key={b.id} name="batchsel" checked={batchFilter === b.batchLabel} onChange={() => { setBatchFilter(b.batchLabel); setSportFilter(b.sport); setPopup(null); }} label={b.batchLabel} />
+            <RadioRow key={b.id} name="batchsel" checked={batchFilter === b.batchLabel} onChange={() => { setBatchFilter(b.batchLabel); setSportFilter(b.sport); setPopup(null); setPanelOpen(false); }} label={b.batchLabel} />
           ))}
         </FilterPopup>
       )}
@@ -1185,7 +1237,7 @@ export default function AttendanceTab() {
       {popup === 'status' && (
         <FilterPopup title="Filter by Status" onClose={() => setPopup(null)}>
           {STATUS_OPTIONS.map(o => (
-            <RadioRow key={o.v} name="statussel" checked={statusFilter === o.v} onChange={() => { setStatusFilter(o.v); setPopup(null); }} label={o.l} />
+            <RadioRow key={o.v} name="statussel" checked={statusFilter === o.v} onChange={() => { setStatusFilter(o.v); setPopup(null); setPanelOpen(false); }} label={o.l} />
           ))}
         </FilterPopup>
       )}
@@ -1193,10 +1245,57 @@ export default function AttendanceTab() {
       {popup === 'sort' && (
         <FilterPopup title="Sort By" onClose={() => setPopup(null)}>
           {SORT_OPTIONS.map(o => (
-            <RadioRow key={o.v} name="sortsel" checked={sortBy === o.v} onChange={() => { setSortBy(o.v); setPopup(null); }} label={o.l} />
+            <RadioRow key={o.v} name="sortsel" checked={sortBy === o.v} onChange={() => { setSortBy(o.v); setPopup(null); setPanelOpen(false); }} label={o.l} />
           ))}
         </FilterPopup>
       )}
+
+      {listPopup && (() => {
+        const label = listPopup === 'P' ? 'Present' : listPopup === 'A' ? 'Absent' : 'Pending';
+        const key = listPopup === 'P' ? 'present_students' : listPopup === 'A' ? 'absent_students' : 'pending_students';
+        const cntKey = listPopup === 'P' ? 'present_count' : listPopup === 'A' ? 'absent_count' : 'pending_count';
+        const sel = submissions.find(x => x.id === selSubId) || null;
+        const list = sel
+          ? [...(sel[key] || [])]
+          : students.filter(r => (listPopup === 'N' ? !records[r.key] : records[r.key] === listPopup))
+              .map(r => ({ id: r.key, name: r.student.name, roll_no: r.student.roll_no || '' }));
+        list.sort((a, b) => (a.roll_no || '').localeCompare(b.roll_no || '', undefined, { numeric: true }));
+        const timeOnly = (iso) => new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const rowStyle = (on) => ({ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', padding: '8px 10px', margin: '2px 0', borderRadius: 10, fontSize: 12.5, fontFamily: 'inherit', cursor: 'pointer', color: on ? '#1A336A' : '#333', fontWeight: on ? 700 : 500, background: on ? 'rgba(91,124,196,.14)' : 'transparent', border: `1px solid ${on ? '#1A336A' : 'var(--border)'}` });
+        return (
+          <FilterPopup title={`${label} (${sel ? (sel[cntKey] ?? list.length) : list.length}) — ${sel ? timeOnly(sel.submitted_at) : 'Live now'}`} onClose={() => setListPopup(null)}>
+            {submissions.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#1A336A', padding: '0 4px 4px' }}>Choose time</div>
+                <button type="button" className="at-btn" style={rowStyle(!sel)} onClick={() => setSelSubId(null)} aria-pressed={!sel}>
+                  <span style={{ width: 16, display: 'flex' }}>{!sel && <Icon name="checkCircle" size={15} />}</span>
+                  <span style={{ flex: 1 }}>Live now</span>
+                </button>
+                {submissions.map(x => {
+                  const on = sel?.id === x.id;
+                  return (
+                    <button key={x.id} type="button" className="at-btn" style={rowStyle(on)} onClick={() => setSelSubId(x.id)} aria-pressed={on}>
+                      <span style={{ width: 16, display: 'flex' }}>{on && <Icon name="checkCircle" size={15} />}</span>
+                      <span style={{ flex: 1 }}>{fmtDateTime(x.submitted_at)}</span>
+                      <span style={{ color: 'var(--gray)', fontWeight: 500 }}>P {x.present_count} · A {x.absent_count} · {x.pending_count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div style={{ fontSize: 12, color: 'var(--gray)', padding: '0 4px 4px' }}>
+              {sel ? `Showing ${label} as recorded on ${fmtDateTime(sel.submitted_at)}` : `Showing current ${label} list`}
+            </div>
+            {list.length === 0 && <div style={{ padding: 16, textAlign: 'center', color: 'var(--gray)', fontSize: 13 }}>No students.</div>}
+            {list.map(r => (
+              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '9px 10px', fontSize: 14, borderBottom: '1px solid var(--border)' }}>
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                <span style={{ color: 'var(--gray)', fontSize: 12.5, flexShrink: 0 }}>{r.roll_no}</span>
+              </div>
+            ))}
+          </FilterPopup>
+        );
+      })()}
 
       {popup === 'day' && (
         <FilterPopup title="Select Day" onClose={() => setPopup(null)}>
@@ -1255,9 +1354,9 @@ export default function AttendanceTab() {
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '4px 11px 4px 10px', marginBottom: 6, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: '0 1px 2px rgba(16,32,64,.05)' }}>
           {/* Summary tiles — left */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, padding: '0 2px' }}>
-            {statTile('checkCircle', presentCount, 'Present', '#1A336A')}
-            {statTile('xCircle', absentCount, 'Absent', '#DC2626')}
-            {statTile('clock', notMarkedCount, 'Pending', '#6B7385')}
+            {statTile('checkCircle', presentCount, 'Present', '#1A336A', 'P')}
+            {statTile('xCircle', absentCount, 'Absent', '#DC2626', 'A')}
+            {statTile('clock', notMarkedCount, 'Pending', '#6B7385', 'N')}
           </div>
           {/* All Present / All Absent — right, same line */}
           {!isFutureDate && (
@@ -1399,6 +1498,14 @@ export default function AttendanceTab() {
             </div>
           ) : dayCompleted ? (
             <>
+              <button className="btn at-btn" style={{ width: '100%', marginTop: 10, padding: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, background: '#fff', color: '#1A336A', border: '1.5px solid #1A336A' }} onClick={submitOk} disabled={savingCheck || isFutureDate || !students.length}>
+                <Icon name="checkCircle" size={17} /> {savingCheck ? 'Saving…' : 'OK — Record Present / Absent'}
+              </button>
+              {submissions[0] && (
+                <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 5, padding: '0 4px' }}>
+                  Last recorded {fmtDateTime(submissions[0].submitted_at)} — P {submissions[0].present_count} · A {submissions[0].absent_count} · Pending {submissions[0].pending_count}
+                </div>
+              )}
               <button className="btn at-btn" disabled style={{ width: '100%', marginTop: 10, padding: 12, background: 'var(--card2)', color: 'var(--gray)', border: '1px solid var(--border)', cursor: 'not-allowed', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
                 <Icon name="lock" size={16} /> Register Closed
               </button>
@@ -1418,6 +1525,14 @@ export default function AttendanceTab() {
             </>
           ) : (
             <>
+              <button className="btn at-btn" style={{ width: '100%', marginTop: 10, padding: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, background: '#fff', color: '#1A336A', border: '1.5px solid #1A336A' }} onClick={submitOk} disabled={savingCheck || isFutureDate || !students.length}>
+                <Icon name="checkCircle" size={17} /> {savingCheck ? 'Saving…' : 'OK — Record Present / Absent'}
+              </button>
+              {submissions[0] && (
+                <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 5, padding: '0 4px' }}>
+                  Last recorded {fmtDateTime(submissions[0].submitted_at)} — P {submissions[0].present_count} · A {submissions[0].absent_count} · Pending {submissions[0].pending_count}
+                </div>
+              )}
               <button className="btn btn-primary at-btn" style={{ width: '100%', marginTop: 10, padding: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }} onClick={markAllDone} disabled={completing}>
                 <Icon name="checkCircle" size={17} /> {completing ? 'Marking…' : 'Done — Close Register'}
               </button>
