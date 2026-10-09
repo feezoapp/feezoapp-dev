@@ -327,21 +327,37 @@ export default function AttendanceTab() {
     // target (Pay, Edit, filters...) was lost and had to be repeated.
     // Registered on the next tick so the click that just closed a popup (or
     // opened this panel) isn't mistaken for an outside click.
+    const inside = (e) => {
+      // composedPath() is captured when the event fires, so it still includes
+      // the panel even if the tapped button was re-rendered (removed from the
+      // DOM) by its own click handler, e.g. the date / month / year arrows.
+      const path = e.composedPath ? e.composedPath() : [];
+      return !!panelRef.current && (path.includes(panelRef.current) || panelRef.current.contains(e.target));
+    };
     const onOutsideClick = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) setPanelOpen(false);
+      if (!inside(e)) setPanelOpen(false);
     };
-    // Also hide when the user scrolls anywhere outside the panel (e.g. the
-    // student list). Ignored for the first moments after opening so layout
-    // shifts from the panel itself don't count as a scroll.
-    const armedAt = Date.now() + 400;
-    const onOutsideScroll = (e) => {
-      if (Date.now() < armedAt) return;
-      if (panelRef.current && e.target instanceof Node && panelRef.current.contains(e.target)) return;
-      setPanelOpen(false);
+    // Hide when the USER scrolls outside the panel (wheel or finger drag).
+    // Real scroll events are not used: reloading the list after changing the
+    // date also fires them and would close the panel by itself.
+    let startY = null;
+    const onTouchStart = (e) => { startY = inside(e) ? null : e.touches[0].clientY; };
+    const onTouchMove = (e) => {
+      if (startY === null) return;
+      if (Math.abs(e.touches[0].clientY - startY) > 12) { startY = null; setPanelOpen(false); }
     };
+    const onWheel = (e) => { if (!inside(e)) setPanelOpen(false); };
     const t = setTimeout(() => document.addEventListener('click', onOutsideClick), 0);
-    document.addEventListener('scroll', onOutsideScroll, true);
-    return () => { clearTimeout(t); document.removeEventListener('click', onOutsideClick); document.removeEventListener('scroll', onOutsideScroll, true); };
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchmove', onTouchMove, { passive: true });
+    document.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('click', onOutsideClick);
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('wheel', onWheel);
+    };
   }, [panelOpen, popup]);
 
   // Tapping the search field while it already has text selects it all,
@@ -1501,38 +1517,44 @@ export default function AttendanceTab() {
           );
         })}
 
-      </div>
-      {/* Pinned action bar — only once a specific sport AND batch are selected */}
-      {!loading && viewMode === 'day' && !isFutureDate && students.length > 0 && sportFilter && batchFilter && (
-        <div style={{ flexShrink: 0, padding: '8px 2px 6px', background: 'transparent', borderTop: '1px solid var(--border)' }}>
-          <button className="btn at-btn" style={{ width: '100%', padding: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, background: '#fff', color: '#1A336A', border: '1.5px solid #1A336A' }} onClick={submitOk} disabled={savingCheck}>
-            <Icon name="checkCircle" size={17} /> {savingCheck ? 'Saving…' : 'Save — Record Present / Absent'}
-          </button>
-          {submissions[0] && (
-            <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 4, padding: '0 4px' }}>
-              Last recorded {fmtDateTime(submissions[0].submitted_at)} — P {submissions[0].present_count} · A {submissions[0].absent_count} · Pending {submissions[0].pending_count}
+        {/* Save / Close Register — at the end of the student list */}
+        {!loading && viewMode === 'day' && !isFutureDate && students.length > 0 && (
+          !sportFilter || !batchFilter ? (
+            <div style={{ fontSize: 12.5, color: 'var(--graydk)', marginTop: 12, padding: '10px 12px', background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <span style={{ display: 'flex', color: '#5B7CC4', marginTop: 1 }}><Icon name="info" size={15} /></span>
+              <span>Select a specific <b>sport</b> and <b>batch</b> in the filters above to <b>Save</b> attendance and <b>Close the register</b>.</span>
             </div>
-          )}
-          {(dayCompleted ? (
-            <>
-              <button className="btn at-btn" disabled style={{ width: '100%', marginTop: 8, padding: 11, background: 'var(--card2)', color: 'var(--gray)', border: '1px solid var(--border)', cursor: 'not-allowed', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
-                <Icon name="lock" size={16} /> Register Closed
+          ) : (
+            <div style={{ marginTop: 12 }}>
+              <button className="btn at-btn" style={{ width: '100%', padding: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, background: '#fff', color: '#1A336A', border: '1.5px solid #1A336A' }} onClick={submitOk} disabled={savingCheck}>
+                <Icon name="checkCircle" size={17} /> {savingCheck ? 'Saving…' : 'Save — Record Present / Absent'}
               </button>
-              {isAdmin && (
-                <button className="btn at-btn" onClick={unlockRegister} disabled={unlocking}
-                  style={{ width: '100%', marginTop: 6, padding: 9, background: 'transparent', color: '#DC2626', border: '1px solid rgba(220,38,38,.35)', fontWeight: 600, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
-                  <Icon name="unlock" size={15} /> {unlocking ? 'Reopening…' : 'Reopen Register (requires reason)'}
+              {submissions[0] && (
+                <div style={{ fontSize: 11, color: 'var(--graydk)', marginTop: 4, padding: '0 4px' }}>
+                  Last recorded {fmtDateTime(submissions[0].submitted_at)} — P {submissions[0].present_count} · A {submissions[0].absent_count} · Pending {submissions[0].pending_count}
+                </div>
+              )}
+              {dayCompleted ? (
+                <>
+                  <button className="btn at-btn" disabled style={{ width: '100%', marginTop: 10, padding: 12, background: 'var(--card2)', color: 'var(--gray)', border: '1px solid var(--border)', cursor: 'not-allowed', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
+                    <Icon name="lock" size={16} /> Register Closed
+                  </button>
+                  {isAdmin && (
+                    <button className="btn at-btn" onClick={unlockRegister} disabled={unlocking}
+                      style={{ width: '100%', marginTop: 8, padding: 10, background: 'transparent', color: '#DC2626', border: '1px solid rgba(220,38,38,.35)', fontWeight: 600, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
+                      <Icon name="unlock" size={15} /> {unlocking ? 'Reopening…' : 'Reopen Register (requires reason)'}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button className="btn btn-primary at-btn" style={{ width: '100%', marginTop: 10, padding: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }} onClick={markAllDone} disabled={completing}>
+                  <Icon name="checkCircle" size={17} /> {completing ? 'Marking…' : 'Done — Close Register'}
                 </button>
               )}
-            </>
-          ) : (
-            <button className="btn btn-primary at-btn" style={{ width: '100%', marginTop: 8, padding: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }} onClick={markAllDone} disabled={completing}>
-              <Icon name="checkCircle" size={17} /> {completing ? 'Marking…' : 'Done — Close Register'}
-            </button>
-          ))}
-        </div>
-      )}
-
+            </div>
+          )
+        )}
+      </div>
       {/* Scroll-to-bottom: jumps the list to its end (same behaviour as before) */}
       <button
         className="at-btn"

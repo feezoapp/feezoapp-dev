@@ -909,20 +909,37 @@ export default function FeesTab() {
     // target (Pay, Edit, filters...) was lost and had to be repeated.
     // Registered on the next tick so the click that just closed a popup (or
     // opened this panel) isn't mistaken for an outside click.
+    const inside = (e) => {
+      // composedPath() is captured when the event fires, so it still includes
+      // the panel even if the tapped button was re-rendered (removed from the
+      // DOM) by its own click handler, e.g. the date / month / year arrows.
+      const path = e.composedPath ? e.composedPath() : [];
+      return !!filtersRef.current && (path.includes(filtersRef.current) || filtersRef.current.contains(e.target));
+    };
     const onOutsideClick = (e) => {
-      if (filtersRef.current && !filtersRef.current.contains(e.target)) setFiltersOpen(false);
+      if (!inside(e)) setFiltersOpen(false);
     };
-    // Also hide when the user scrolls anywhere outside the card. Ignored for
-    // the first moments after opening so layout shifts don't count.
-    const armedAt = Date.now() + 400;
-    const onOutsideScroll = (e) => {
-      if (Date.now() < armedAt) return;
-      if (filtersRef.current && e.target instanceof Node && filtersRef.current.contains(e.target)) return;
-      setFiltersOpen(false);
+    // Hide when the USER scrolls outside the panel (wheel or finger drag).
+    // Real scroll events are not used: reloading the list after changing the
+    // date also fires them and would close the panel by itself.
+    let startY = null;
+    const onTouchStart = (e) => { startY = inside(e) ? null : e.touches[0].clientY; };
+    const onTouchMove = (e) => {
+      if (startY === null) return;
+      if (Math.abs(e.touches[0].clientY - startY) > 12) { startY = null; setFiltersOpen(false); }
     };
+    const onWheel = (e) => { if (!inside(e)) setFiltersOpen(false); };
     const t = setTimeout(() => document.addEventListener('click', onOutsideClick), 0);
-    document.addEventListener('scroll', onOutsideScroll, true);
-    return () => { clearTimeout(t); document.removeEventListener('click', onOutsideClick); document.removeEventListener('scroll', onOutsideScroll, true); };
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchmove', onTouchMove, { passive: true });
+    document.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('click', onOutsideClick);
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('wheel', onWheel);
+    };
   }, [filtersOpen, popup]);
 
   // Tapping the search field while it already has text selects it all,
