@@ -314,6 +314,12 @@ export default function AttendanceTab() {
 
   useEffect(() => { setExpandedMonth(null); }, [year, viewMode, sportFilter, batchFilter]);
 
+  // Tapping the search field while it already has text selects it all,
+  // so typing immediately replaces the previous query. No-op on an empty field.
+  const selectAllOnTap = (e) => {
+    if (e.target.value) e.target.select();
+  };
+
   const students = useMemo(() => {
     // Built from each student's full enrollment HISTORY (not just the
     // currently-active enrollment), keeping any enrollment that overlapped
@@ -1209,6 +1215,8 @@ export default function AttendanceTab() {
           aria-label="Search students by name or roll number"
           value={search}
           onChange={e => setSearch(e.target.value)}
+          onFocus={selectAllOnTap}
+          onClick={selectAllOnTap}
           style={{
             width: '100%', height: 38, padding: '0 38px 0 36px', boxSizing: 'border-box', borderRadius: 10,
             border: '1px solid var(--border)', background: 'var(--card2)', fontSize: 13.5, fontWeight: 400,
