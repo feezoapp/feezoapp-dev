@@ -912,8 +912,17 @@ export default function FeesTab() {
     const onOutsideClick = (e) => {
       if (filtersRef.current && !filtersRef.current.contains(e.target)) setFiltersOpen(false);
     };
+    // Also hide when the user scrolls anywhere outside the card. Ignored for
+    // the first moments after opening so layout shifts don't count.
+    const armedAt = Date.now() + 400;
+    const onOutsideScroll = (e) => {
+      if (Date.now() < armedAt) return;
+      if (filtersRef.current && e.target instanceof Node && filtersRef.current.contains(e.target)) return;
+      setFiltersOpen(false);
+    };
     const t = setTimeout(() => document.addEventListener('click', onOutsideClick), 0);
-    return () => { clearTimeout(t); document.removeEventListener('click', onOutsideClick); };
+    document.addEventListener('scroll', onOutsideScroll, true);
+    return () => { clearTimeout(t); document.removeEventListener('click', onOutsideClick); document.removeEventListener('scroll', onOutsideScroll, true); };
   }, [filtersOpen, popup]);
 
   // Tapping the search field while it already has text selects it all,

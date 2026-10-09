@@ -273,6 +273,7 @@ export default function AttendanceTab() {
   const [showDownload, setShowDownload] = useState(false); // PDF / Excel chooser
   const [reloadKey, setReloadKey] = useState(0);
   const [showScrollArrow, setShowScrollArrow] = useState(false);
+  const [arrowBright, setArrowBright] = useState(false); // brief highlight after tapping the down arrow
   const listScrollRef = useRef(null);
   // Tracks which date `dayStatusMap` was last built for, so a same-date
   // refetch can only ever ADD a confirmed-closed sport, never remove one —
@@ -329,8 +330,18 @@ export default function AttendanceTab() {
     const onOutsideClick = (e) => {
       if (panelRef.current && !panelRef.current.contains(e.target)) setPanelOpen(false);
     };
+    // Also hide when the user scrolls anywhere outside the panel (e.g. the
+    // student list). Ignored for the first moments after opening so layout
+    // shifts from the panel itself don't count as a scroll.
+    const armedAt = Date.now() + 400;
+    const onOutsideScroll = (e) => {
+      if (Date.now() < armedAt) return;
+      if (panelRef.current && e.target instanceof Node && panelRef.current.contains(e.target)) return;
+      setPanelOpen(false);
+    };
     const t = setTimeout(() => document.addEventListener('click', onOutsideClick), 0);
-    return () => { clearTimeout(t); document.removeEventListener('click', onOutsideClick); };
+    document.addEventListener('scroll', onOutsideScroll, true);
+    return () => { clearTimeout(t); document.removeEventListener('click', onOutsideClick); document.removeEventListener('scroll', onOutsideScroll, true); };
   }, [panelOpen, popup]);
 
   // Tapping the search field while it already has text selects it all,
@@ -1218,18 +1229,18 @@ export default function AttendanceTab() {
 
       {popup === 'sport' && (
         <FilterPopup title="Select Sport" onClose={() => setPopup(null)}>
-          <RadioRow name="sportsel" checked={!sportFilter} onChange={() => { setSportFilter(''); setBatchFilter(''); setPopup(null); setPanelOpen(false); }} label="All Sports" />
+          <RadioRow name="sportsel" checked={!sportFilter} onChange={() => { setSportFilter(''); setBatchFilter(''); setPopup(null); }} label="All Sports" />
           {visibleSports.map(s => (
-            <RadioRow key={s.id} name="sportsel" checked={sportFilter === s.name} onChange={() => { setSportFilter(s.name); setBatchFilter(''); setPopup(null); setPanelOpen(false); }} label={s.name} />
+            <RadioRow key={s.id} name="sportsel" checked={sportFilter === s.name} onChange={() => { setSportFilter(s.name); setBatchFilter(''); setPopup(null); }} label={s.name} />
           ))}
         </FilterPopup>
       )}
 
       {popup === 'batch' && (
         <FilterPopup title="Select Batch" onClose={() => setPopup(null)}>
-          <RadioRow name="batchsel" checked={!batchFilter} onChange={() => { setBatchFilter(''); setPopup(null); setPanelOpen(false); }} label="All Batches" />
+          <RadioRow name="batchsel" checked={!batchFilter} onChange={() => { setBatchFilter(''); setPopup(null); }} label="All Batches" />
           {batchesForSport.map(b => (
-            <RadioRow key={b.id} name="batchsel" checked={batchFilter === b.batchLabel} onChange={() => { setBatchFilter(b.batchLabel); setSportFilter(b.sport); setPopup(null); setPanelOpen(false); }} label={b.batchLabel} />
+            <RadioRow key={b.id} name="batchsel" checked={batchFilter === b.batchLabel} onChange={() => { setBatchFilter(b.batchLabel); setSportFilter(b.sport); setPopup(null); }} label={b.batchLabel} />
           ))}
         </FilterPopup>
       )}
@@ -1237,7 +1248,7 @@ export default function AttendanceTab() {
       {popup === 'status' && (
         <FilterPopup title="Filter by Status" onClose={() => setPopup(null)}>
           {STATUS_OPTIONS.map(o => (
-            <RadioRow key={o.v} name="statussel" checked={statusFilter === o.v} onChange={() => { setStatusFilter(o.v); setPopup(null); setPanelOpen(false); }} label={o.l} />
+            <RadioRow key={o.v} name="statussel" checked={statusFilter === o.v} onChange={() => { setStatusFilter(o.v); setPopup(null); }} label={o.l} />
           ))}
         </FilterPopup>
       )}
@@ -1245,7 +1256,7 @@ export default function AttendanceTab() {
       {popup === 'sort' && (
         <FilterPopup title="Sort By" onClose={() => setPopup(null)}>
           {SORT_OPTIONS.map(o => (
-            <RadioRow key={o.v} name="sortsel" checked={sortBy === o.v} onChange={() => { setSortBy(o.v); setPopup(null); setPanelOpen(false); }} label={o.l} />
+            <RadioRow key={o.v} name="sortsel" checked={sortBy === o.v} onChange={() => { setSortBy(o.v); setPopup(null); }} label={o.l} />
           ))}
         </FilterPopup>
       )}
@@ -1493,7 +1504,7 @@ export default function AttendanceTab() {
       </div>
       {/* Pinned action bar — only once a specific sport AND batch are selected */}
       {!loading && viewMode === 'day' && !isFutureDate && students.length > 0 && sportFilter && batchFilter && (
-        <div style={{ flexShrink: 0, padding: '8px 2px 6px', background: 'var(--bg, #fff)', borderTop: '1px solid var(--border)' }}>
+        <div style={{ flexShrink: 0, padding: '8px 2px 6px', background: 'transparent', borderTop: '1px solid var(--border)' }}>
           <button className="btn at-btn" style={{ width: '100%', padding: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, background: '#fff', color: '#1A336A', border: '1.5px solid #1A336A' }} onClick={submitOk} disabled={savingCheck}>
             <Icon name="checkCircle" size={17} /> {savingCheck ? 'Saving…' : 'Save — Record Present / Absent'}
           </button>
@@ -1502,15 +1513,17 @@ export default function AttendanceTab() {
               Last recorded {fmtDateTime(submissions[0].submitted_at)} — P {submissions[0].present_count} · A {submissions[0].absent_count} · Pending {submissions[0].pending_count}
             </div>
           )}
-          {isAdmin && (dayCompleted ? (
+          {(dayCompleted ? (
             <>
               <button className="btn at-btn" disabled style={{ width: '100%', marginTop: 8, padding: 11, background: 'var(--card2)', color: 'var(--gray)', border: '1px solid var(--border)', cursor: 'not-allowed', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
                 <Icon name="lock" size={16} /> Register Closed
               </button>
-              <button className="btn at-btn" onClick={unlockRegister} disabled={unlocking}
-                style={{ width: '100%', marginTop: 6, padding: 9, background: 'transparent', color: '#DC2626', border: '1px solid rgba(220,38,38,.35)', fontWeight: 600, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
-                <Icon name="unlock" size={15} /> {unlocking ? 'Reopening…' : 'Reopen Register (requires reason)'}
-              </button>
+              {isAdmin && (
+                <button className="btn at-btn" onClick={unlockRegister} disabled={unlocking}
+                  style={{ width: '100%', marginTop: 6, padding: 9, background: 'transparent', color: '#DC2626', border: '1px solid rgba(220,38,38,.35)', fontWeight: 600, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
+                  <Icon name="unlock" size={15} /> {unlocking ? 'Reopening…' : 'Reopen Register (requires reason)'}
+                </button>
+              )}
             </>
           ) : (
             <button className="btn btn-primary at-btn" style={{ width: '100%', marginTop: 8, padding: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }} onClick={markAllDone} disabled={completing}>
@@ -1523,7 +1536,7 @@ export default function AttendanceTab() {
       {/* Scroll-to-bottom: jumps the list to its end (same behaviour as before) */}
       <button
         className="at-btn"
-        onClick={scrollToBottom}
+        onClick={() => { scrollToBottom(); setArrowBright(true); setTimeout(() => setArrowBright(false), 700); }}
         aria-label="Scroll to bottom"
         title="Scroll to bottom"
         style={{
@@ -1531,9 +1544,9 @@ export default function AttendanceTab() {
           width: 36, height: 36, borderRadius: '50%', padding: 0,
           background: '#1A336A', color: '#fff', border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 3px 10px rgba(26,51,106,.32)', cursor: 'pointer',
-          opacity: showScrollArrow ? 1 : 0, pointerEvents: showScrollArrow ? 'auto' : 'none',
-          transition: 'opacity .2s',
+          boxShadow: arrowBright ? '0 3px 10px rgba(26,51,106,.32)' : 'none', cursor: 'pointer',
+          opacity: showScrollArrow ? (arrowBright ? 1 : 0.22) : 0, pointerEvents: showScrollArrow ? 'auto' : 'none',
+          transition: 'opacity .35s ease, box-shadow .35s ease',
         }}
       >
         <Icon name="chevronDown" size={18} stroke={2.4} />
