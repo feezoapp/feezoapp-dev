@@ -69,15 +69,53 @@ function RadioRow({ name, checked, onChange, label }) {
   );
 }
 
+// Lucide-style outline icons (inline so no extra dependency is needed).
+const SHEET_ICONS = {
+  phone: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />,
+  calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>,
+  mapPin: <><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></>,
+  medal: <><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15" /><path d="M11 12 5.12 2.2M13 12l5.88-9.8M8 7h8" /><circle cx="12" cy="17" r="5" /><path d="M12 18v-2h-.5" /></>,
+  userRound: <><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></>,
+  userCheck: <><path d="m16 11 2 2 4-4" /><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></>,
+  fileText: <><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4M10 9H8M16 13H8M16 17H8" /></>,
+  users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
+  pencil: <><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></>,
+  archive: <><rect x="2" y="3" width="20" height="5" rx="1" /><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4" /></>,
+  archiveRestore: <><rect x="2" y="3" width="20" height="5" rx="1" /><path d="M4 8v11a2 2 0 0 0 2 2h2M20 8v11a2 2 0 0 1-2 2h-2M9 15l3-3 3 3M12 12v9" /></>,
+  trash: <><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6" /></>,
+  x: <path d="M18 6 6 18M6 6l12 12" />,
+  save: <><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7" /></>,
+  flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />,
+  zap: <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />,
+  snowflake: <path d="m10 20-1.25-2.5L6 18M10 4 8.75 6.5 6 6M14 20l1.25-2.5L18 18M14 4l1.25 2.5L18 6M17 21l-3-6h-4M17 3l-3 6 1.5 3M2 12h6.5L10 9M20 10l-1.5 2 1.5 2M22 12h-6.5L14 15M4 10l1.5 2L4 14M7 21l3-6-1.5-3M7 3l3 6h4" />,
+};
+
+function SheetIcon({ name, size = 16, stroke = 2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke}
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      {SHEET_ICONS[name]}
+    </svg>
+  );
+}
+
+const BADGE_ICON = { High: 'flame', Medium: 'zap', Low: 'snowflake' };
+
 function ConversionBadge({ ratio }) {
   if (!ratio) return null;
   const b = CONVERSION_BADGE[ratio] || CONVERSION_BADGE.Low;
   return (
-    <span style={{ fontSize: 10, fontWeight: 700, background: b.bg, color: b.color, borderRadius: 5, padding: '2px 6px' }}>
-      {b.icon} {ratio}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10.5, fontWeight: 700, background: b.bg, color: b.color, borderRadius: 6, padding: '2px 7px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+      <SheetIcon name={BADGE_ICON[ratio] || 'snowflake'} size={11} stroke={2.4} /> {ratio}
     </span>
   );
 }
+
+const SHEET_CSS = `
+.eq-sheet button:focus-visible,.eq-sheet a:focus-visible,.eq-sheet input:focus-visible,.eq-sheet select:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+.eq-sheet .eq-btn{transition:transform .12s ease,background-color .15s ease,border-color .15s ease,opacity .15s ease}
+.eq-sheet .eq-btn:active:not(:disabled){transform:scale(.98)}
+`;
 
 function Field({ label, children }) {
   return (
@@ -599,34 +637,75 @@ export default function EnquiryTab({ isActive = true }) {
 
       {isActive && detail && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 62, background: 'rgba(10,20,40,.55)', zIndex: 250, display: 'flex', alignItems: 'flex-end' }} onClick={closeDetail}>
-          <div className="card" style={{ width: '100%', maxWidth: 480, margin: '0 auto', maxHeight: '85vh', overflowY: 'auto', padding: 16 }} onClick={e => e.stopPropagation()}>
+          <div
+            className="eq-sheet"
+            role="dialog" aria-modal="true" aria-label="Enquiry details"
+            style={{
+              width: '100%', maxWidth: 480, margin: '0 auto', maxHeight: '100%', overflowY: 'auto', overscrollBehavior: 'contain',
+              background: 'var(--card, #fff)', border: '1px solid var(--border)', borderBottom: 'none',
+              borderRadius: '16px 16px 0 0', boxShadow: '0 -6px 20px rgba(10,20,40,.16)',
+              padding: '14px 14px calc(14px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <style>{SHEET_CSS}</style>
             {!editing ? (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: 17, display: 'flex', alignItems: 'center', gap: 6 }}>{detail.name} <ConversionBadge ratio={detail.conversion_ratio} /></div>
-                    {detail.phone && <a href={`tel:${detail.phone}`} style={{ fontSize: 13, color: 'var(--accent2)', textDecoration: 'none' }}>📞 {detail.phone}</a>}
+                {/* Contact header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px' }}>
+                      <span style={{ fontWeight: 700, fontSize: 17, color: '#182238', lineHeight: 1.25, overflowWrap: 'anywhere' }}>{detail.name}</span>
+                      <ConversionBadge ratio={detail.conversion_ratio} />
+                    </div>
+                    {detail.phone && (
+                      <a href={`tel:${detail.phone}`} aria-label={`Call ${detail.name} at ${detail.phone}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 32, fontSize: 13.5, fontWeight: 500, color: '#1A336A', textDecoration: 'none' }}>
+                        <SheetIcon name="phone" size={14} /> {detail.phone}
+                      </a>
+                    )}
                   </div>
-                  <button onClick={closeDetail} style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--card2)', border: '1px solid var(--border)', cursor: 'pointer' }}>✕</button>
+                  <button type="button" className="eq-btn" onClick={closeDetail} aria-label="Close enquiry details"
+                    style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--card2)', border: '1px solid var(--border)', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}>
+                    <SheetIcon name="x" size={16} />
+                  </button>
                 </div>
 
-                {detail.query && <div style={{ fontSize: 13, background: 'var(--card2)', borderRadius: 8, padding: 10, marginBottom: 10 }}>{detail.query}</div>}
+                {/* Description */}
+                {detail.query && (
+                  <div style={{ fontSize: 13.5, lineHeight: 1.5, color: '#182238', background: 'rgba(91,124,196,.08)', border: '1px solid rgba(91,124,196,.16)', borderRadius: 10, padding: '9px 11px', marginBottom: 10, overflowWrap: 'anywhere' }}>
+                    {detail.query}
+                  </div>
+                )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12.5, marginBottom: 12 }}>
-                  {detail.location && <div><span style={{ color: 'var(--gray)' }}>📍 Location: </span>{detail.location}</div>}
-                  {detail.sport && <div><span style={{ color: 'var(--gray)' }}>🏅 Sport: </span>{detail.sport}</div>}
-                  {isAdmin && <div><span style={{ color: 'var(--gray)' }}>👤 Assigned to: </span>{detail.assigned_to ? assignedName(detail.assigned_to) : 'Unassigned'}</div>}
-                  {detail.created_by && <div><span style={{ color: 'var(--gray)' }}>✍️ Added by: </span>{detail.created_by}</div>}
+                {/* Metadata */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7, fontSize: 13, marginBottom: 12 }}>
+                  {[
+                    detail.location && { icon: 'mapPin', label: 'Location', value: detail.location },
+                    detail.sport && { icon: 'medal', label: 'Sport', value: detail.sport },
+                    isAdmin && { icon: 'userRound', label: 'Assigned to', value: detail.assigned_to ? assignedName(detail.assigned_to) : null, empty: 'Unassigned' },
+                    detail.created_by && { icon: 'userCheck', label: 'Added by', value: detail.created_by },
+                  ].filter(Boolean).map(m => (
+                    <div key={m.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, minWidth: 0 }}>
+                      <span style={{ display: 'flex', color: '#5B7CC4', marginTop: 2 }}><SheetIcon name={m.icon} size={15} /></span>
+                      <span style={{ color: 'var(--gray)', width: 82, flexShrink: 0 }}>{m.label}</span>
+                      <span style={{ minWidth: 0, overflowWrap: 'anywhere', fontWeight: m.value ? 600 : 500, color: m.value ? '#182238' : 'var(--gray)' }}>{m.value || m.empty}</span>
+                    </div>
+                  ))}
                 </div>
 
+                {/* Next reminder date */}
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'var(--gray)', marginBottom: 5 }}>📅 Next Reminder Date</label>
-                  <input type="date" className="form-input" defaultValue={detail.reminder_date || ''} onBlur={e => { if (e.target.value !== (detail.reminder_date || '')) saveReminder(e.target.value); }} />
+                  <label htmlFor="eq-reminder" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#1A336A', marginBottom: 5 }}>
+                    <SheetIcon name="calendar" size={14} /> Next Reminder Date
+                  </label>
+                  <input id="eq-reminder" type="date" className="form-input" style={{ height: 40, background: '#fff', boxSizing: 'border-box' }} defaultValue={detail.reminder_date || ''} onBlur={e => { if (e.target.value !== (detail.reminder_date || '')) saveReminder(e.target.value); }} />
                 </div>
 
+                {/* Staff notes */}
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'var(--gray)', marginBottom: 5 }}>
-                    📝 Staff Notes {(detail.staff_notes || []).length > 0 && `(${detail.staff_notes.length})`}
+                  <label htmlFor="eq-note" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#1A336A', marginBottom: 5 }}>
+                    <SheetIcon name="fileText" size={14} /> Staff Notes {(detail.staff_notes || []).length > 0 && `(${detail.staff_notes.length})`}
                   </label>
                   {(detail.staff_notes || []).length > 0 && (
                     <div
@@ -644,39 +723,58 @@ export default function EnquiryTab({ isActive = true }) {
                       }}
                     >
                       {detail.staff_notes.map((n, i) => (
-                        <div key={i} style={{ fontSize: 12, background: 'var(--card2)', borderRadius: 6, padding: '6px 9px' }}>
+                        <div key={i} style={{ fontSize: 12, background: 'var(--card2)', borderRadius: 6, padding: '6px 9px', overflowWrap: 'anywhere' }}>
                           <div>{n.note}</div>
                           <div style={{ fontSize: 10, color: 'var(--gray)', marginTop: 2 }}>{n.by} · {relTime(n.at)}</div>
                         </div>
                       ))}
                     </div>
                   )}
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <input className="form-input" style={{ flex: 1 }} placeholder="Add a note…" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveNote(); }} />
-                    <button className="btn btn-outline btn-sm" onClick={saveNote}>Add</button>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+                    <input id="eq-note" className="form-input" style={{ flex: 1, minWidth: 0, height: 40, background: '#fff', boxSizing: 'border-box' }} placeholder="Add a note…" value={noteDraft} onChange={e => setNoteDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveNote(); }} />
+                    <button type="button" className="btn btn-outline btn-sm eq-btn" style={{ height: 40, padding: '0 16px', borderRadius: 10, flexShrink: 0, color: '#1A336A', fontWeight: 600 }} onClick={saveNote}>Add</button>
                   </div>
                 </div>
 
                 {isAdmin && (detail.edit_history || []).length > 0 && (
-                  <div style={{ fontSize: 10, color: 'var(--gray)', marginBottom: 12 }}>
+                  <div style={{ fontSize: 10.5, color: 'var(--gray)', marginBottom: 10 }}>
                     Last edited by {detail.edit_history[detail.edit_history.length - 1].by} · {relTime(detail.edit_history[detail.edit_history.length - 1].at)}
                   </div>
                 )}
 
+                {/* Primary action */}
                 {isAdmin && !detail.archived && (
-                  <button className="btn btn-success" style={{ width: '100%', padding: 11, marginBottom: 8 }} onClick={startConvert}>👥 Convert to Student</button>
+                  <button type="button" className="btn eq-btn" onClick={startConvert}
+                    style={{ width: '100%', minHeight: 44, marginBottom: 8, borderRadius: 12, background: '#1A336A', color: '#fff', border: 'none', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <SheetIcon name="users" size={17} /> Convert to Student
+                  </button>
                 )}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <button className="btn btn-outline btn-sm" style={{ flex: 1 }} onClick={startEdit}>✏️ Edit</button>
-                  <button className="btn btn-outline btn-sm" style={{ flex: 1 }} onClick={toggleArchive}>{detail.archived ? '♻️ Restore' : '🗄️ Archive'}</button>
+
+                {/* Secondary actions */}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" className="btn btn-outline eq-btn" onClick={startEdit}
+                    style={{ flex: 1, minHeight: 42, borderRadius: 10, color: '#1A336A', border: '1px solid var(--border)', background: '#fff', fontWeight: 600, fontSize: 13.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+                    <SheetIcon name="pencil" size={15} /> Edit
+                  </button>
+                  <button type="button" className="btn btn-outline eq-btn" onClick={toggleArchive}
+                    style={{ flex: 1, minHeight: 42, borderRadius: 10, color: '#1A336A', border: '1px solid var(--border)', background: '#fff', fontWeight: 600, fontSize: 13.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+                    <SheetIcon name={detail.archived ? 'archiveRestore' : 'archive'} size={15} /> {detail.archived ? 'Restore' : 'Archive'}
+                  </button>
                 </div>
+
+                {/* Destructive action — visually separated */}
                 {isAdmin && (
-                  <button className="btn btn-sm" style={{ width: '100%', background: 'var(--red, #dc2626)', color: '#fff', border: 'none' }} onClick={removeEnquiry}>🗑️ Delete Query</button>
+                  <div style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 12 }}>
+                    <button type="button" className="btn eq-btn" onClick={removeEnquiry}
+                      style={{ width: '100%', minHeight: 42, borderRadius: 10, background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA', fontWeight: 600, fontSize: 13.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+                      <SheetIcon name="trash" size={15} /> Delete Query
+                    </button>
+                  </div>
                 )}
               </>
             ) : (
               <>
-                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 12 }}>✏️ Edit Query</div>
+                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, color: '#182238' }}><SheetIcon name="pencil" size={17} /> Edit Query</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <Field label="Name"><input className={inputStyle} value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} /></Field>
                   <Field label="Phone"><input className={inputStyle} maxLength={10} value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: normalizePhone(e.target.value).slice(0, 10) }))} /></Field>
@@ -686,7 +784,7 @@ export default function EnquiryTab({ isActive = true }) {
                     <Field label="Conversion Ratio">
                       <select className="form-select" value={editForm.conversionRatio} onChange={e => setEditForm(f => ({ ...f, conversionRatio: e.target.value }))}>
                         <option value="">Select…</option>
-                        {CONVERSION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        {CONVERSION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.value}</option>)}
                       </select>
                     </Field>
                   </div>
@@ -706,7 +804,7 @@ export default function EnquiryTab({ isActive = true }) {
                   )}
                   <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                     <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setEditing(false)}>Cancel</button>
-                    <button className="btn btn-primary" style={{ flex: 1.4 }} onClick={saveEdit}>💾 Save Changes</button>
+                    <button type="button" className="btn btn-primary" style={{ flex: 1.4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={saveEdit}><SheetIcon name="save" size={16} /> Save Changes</button>
                   </div>
                 </div>
               </>
