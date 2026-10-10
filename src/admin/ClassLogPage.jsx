@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAcademyData } from '../context/AcademyDataContext';
 import { usePlan } from '../context/PlanContext';
@@ -46,35 +47,129 @@ function to24(h12, min, period) {
   return `${pad(h)}:${pad(parseInt(min, 10))}`;
 }
 
-const HOUR_OPTS = Array.from({ length: 12 }, (_, i) => String(i + 1));
-const MIN_OPTS = Array.from({ length: 12 }, (_, i) => pad(i * 5));
 
-// A 3-part 12-hour time picker (hour / minute / AM-PM) that stores its value
-// as a plain 24h "HH:MM" string, so the rest of the app (duration calc,
-// Supabase columns) doesn't need to change.
-function TimePicker12({ value, onChange, accentColor, label = 'Time' }) {
-  const { h12, min, period } = to12(value);
-  const selStyle = { flex: 1, minWidth: 0, height: 40, padding: '0 4px', fontSize: 14, textAlign: 'center', textAlignLast: 'center', boxSizing: 'border-box', background: '#fff' };
-  const set = (nh, nm, np) => onChange(to24(nh, nm, np));
+// Modern clock-face time picker. The value is still a plain 24h "HH:MM" string
+// (via to12/to24), so duration maths and the Supabase columns are unchanged.
+// Tap the field -> pick the hour on the clock, then the minute (5-minute steps,
+// same as the old lists), choose AM/PM, then OK.
+const CLOCK_SIZE = 248;
+const CLOCK_C = CLOCK_SIZE / 2;
+const CLOCK_R = 92;
+const polar = (deg, r = CLOCK_R) => {
+  const a = (deg - 90) * Math.PI / 180;
+  return { x: CLOCK_C + r * Math.cos(a), y: CLOCK_C + r * Math.sin(a) };
+};
+
+function ClockDialog({ label, value, onChange, onClose }) {
+  const init = to12(value);
+  const [h, setH] = useState(init.h12);
+  const [m, setM] = useState(init.min || '00');
+  const [period, setPeriod] = useState(init.period || 'AM');
+  const [mode, setMode] = useState('hour');
+  const dragging = useRef(false);
+  const faceRef = useRef(null);
+
+  const applyPoint = (e) => {
+    const rect = faceRef.current.getBoundingClientRect();
+    const x = e.clientX - (rect.left + rect.width / 2);
+    const y = e.clientY - (rect.top + rect.height / 2);
+    const deg = (Math.atan2(x, -y) * 180 / Math.PI + 360) % 360;
+    const step = Math.round(deg / 30) % 12;
+    if (mode === 'hour') setH(String(step || 12));
+    else setM(pad(step * 5));
+  };
+  const onDown = (e) => { dragging.current = true; e.currentTarget.setPointerCapture?.(e.pointerId); applyPoint(e); };
+  const onMove = (e) => { if (dragging.current) applyPoint(e); };
+  const onUp = () => { if (!dragging.current) return; dragging.current = false; if (mode === 'hour') setMode('minute'); };
+  const onKey = (e) => {
+    const dir = (e.key === 'ArrowUp' || e.key === 'ArrowRight') ? 1 : (e.key === 'ArrowDown' || e.key === 'ArrowLeft') ? -1 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    if (mode === 'hour') setH(String((((parseInt(h || '12', 10) - 1 + dir + 12) % 12) + 1)));
+    else setM(pad(((parseInt(m || '0', 10) + dir * 5) % 60 + 60) % 60));
+  };
+
+  const hourNum = parseInt(h, 10);
+  const minNum = parseInt(m, 10);
+  const selDeg = mode === 'hour' ? (h ? (hourNum % 12) * 30 : null) : (minNum || 0) * 6;
+  const hand = selDeg === null ? null : polar(selDeg);
+  const labels = Array.from({ length: 12 }, (_, i) => (mode === 'hour' ? { txt: String(i === 0 ? 12 : i), deg: i * 30, on: h && hourNum % 12 === i } : { txt: pad(i * 5), deg: i * 30, on: minNum === i * 5 }));
+
+  const seg = (active) => ({
+    height: 56, minWidth: 64, padding: '0 8px', borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+    fontSize: 40, fontWeight: 600, lineHeight: 1, background: active ? 'rgba(91,124,196,.18)' : 'var(--card2)', color: active ? '#1A336A' : '#475569',
+  });
+  const pBtn = (on) => ({
+    flex: 1, minWidth: 48, height: 38, border: `1px solid ${on ? '#1A336A' : 'var(--border)'}`, cursor: 'pointer', fontFamily: 'inherit',
+    fontSize: 13, fontWeight: 700, background: on ? 'rgba(91,124,196,.18)' : '#fff', color: on ? '#1A336A' : '#475569',
+  });
+
+  return createPortal(
+    <div className="cl-overlay" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}
+      role="dialog" aria-modal="true" aria-label={`${label} picker`}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(10,18,35,.5)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div className="cl-popup cl-sheet" onClick={(e) => e.stopPropagation()}
+        style={{ background: '#fff', borderRadius: 20, padding: '16px 16px 12px', width: '100%', maxWidth: 320, boxSizing: 'border-box', boxShadow: '0 12px 32px rgba(10,18,35,.24)' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', letterSpacing: '.3px', textTransform: 'uppercase', marginBottom: 8 }}>{label}</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 12 }}>
+          <button type="button" style={seg(mode === 'hour')} aria-pressed={mode === 'hour'} aria-label="Set hour" onClick={() => setMode('hour')}>{h || '--'}</button>
+          <span aria-hidden="true" style={{ fontSize: 36, fontWeight: 700, color: '#475569' }}>:</span>
+          <button type="button" style={seg(mode === 'minute')} aria-pressed={mode === 'minute'} aria-label="Set minutes" onClick={() => setMode('minute')}>{m}</button>
+          <div role="group" aria-label="AM or PM" style={{ display: 'flex', flexDirection: 'column', marginLeft: 6 }}>
+            <button type="button" aria-pressed={period === 'AM'} style={{ ...pBtn(period === 'AM'), borderRadius: '10px 10px 0 0', borderBottom: 'none', height: 28 }} onClick={() => setPeriod('AM')}>AM</button>
+            <button type="button" aria-pressed={period === 'PM'} style={{ ...pBtn(period === 'PM'), borderRadius: '0 0 10px 10px', height: 28 }} onClick={() => setPeriod('PM')}>PM</button>
+          </div>
+        </div>
+
+        <svg ref={faceRef} width="100%" viewBox={`0 0 ${CLOCK_SIZE} ${CLOCK_SIZE}`} tabIndex={0} role="slider"
+          aria-label={mode === 'hour' ? 'Hour' : 'Minutes'} aria-valuetext={mode === 'hour' ? (h || 'not set') : m}
+          onKeyDown={onKey} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+          style={{ display: 'block', maxWidth: 248, margin: '0 auto', touchAction: 'none', cursor: 'pointer', userSelect: 'none', borderRadius: '50%' }}>
+          <circle cx={CLOCK_C} cy={CLOCK_C} r={CLOCK_C - 2} fill="#EEF2FA" />
+          {hand && <line x1={CLOCK_C} y1={CLOCK_C} x2={hand.x} y2={hand.y} stroke="#1A336A" strokeWidth="2" strokeLinecap="round" />}
+          <circle cx={CLOCK_C} cy={CLOCK_C} r="4" fill="#1A336A" />
+          {hand && <circle cx={hand.x} cy={hand.y} r="20" fill="#1A336A" />}
+          {labels.map((l) => {
+            const pt = polar(l.deg);
+            return (
+              <text key={l.txt} x={pt.x} y={pt.y} textAnchor="middle" dominantBaseline="central"
+                style={{ fontSize: 15, fontWeight: 600, fontFamily: 'inherit', pointerEvents: 'none' }} fill={l.on ? '#fff' : '#182238'}>{l.txt}</text>
+            );
+          })}
+        </svg>
+        <div style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--gray)', margin: '6px 0 10px' }}>
+          {mode === 'hour' ? 'Tap the hour' : 'Tap the minutes (5-min steps)'}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button type="button" className="cl-iconbtn" onClick={() => { onChange(''); onClose(); }}
+            style={{ height: 40, padding: '0 10px', border: 'none', background: 'transparent', color: '#B91C1C', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Clear</button>
+          <span style={{ flex: 1 }} />
+          <button type="button" className="cl-iconbtn" onClick={onClose}
+            style={{ height: 40, padding: '0 14px', borderRadius: 10, border: '1px solid var(--border)', background: '#fff', color: '#1A336A', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+          <button type="button" className="cl-iconbtn" disabled={!h} onClick={() => { onChange(to24(h, m || '00', period)); onClose(); }}
+            style={{ height: 40, padding: '0 18px', borderRadius: 10, border: 'none', background: '#1A336A', color: '#fff', fontWeight: 700, fontSize: 13, cursor: h ? 'pointer' : 'not-allowed', opacity: h ? 1 : 0.5, fontFamily: 'inherit' }}>OK</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function TimePicker12({ value, onChange, label = 'Time' }) {
+  const [open, setOpen] = useState(false);
+  const shown = fmt12(value);
   return (
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 0 }}>
-      <select className="form-select" style={selStyle} value={h12} aria-label={`${label} hour`}
-        onChange={(e) => set(e.target.value, min || '00', period)}>
-        <option value="">--</option>
-        {HOUR_OPTS.map(h => <option key={h} value={h}>{h}</option>)}
-      </select>
-      <span aria-hidden="true" style={{ color: accentColor || 'var(--gray)', fontWeight: 700, flexShrink: 0 }}>:</span>
-      <select className="form-select" style={selStyle} value={min} aria-label={`${label} minutes`}
-        onChange={(e) => set(h12 || '12', e.target.value, period)}>
-        <option value="">--</option>
-        {MIN_OPTS.map(m => <option key={m} value={m}>{m}</option>)}
-      </select>
-      <select className="form-select" style={{ ...selStyle, flex: '0 0 60px' }} value={period} aria-label={`${label} AM or PM`}
-        onChange={(e) => set(h12 || '12', min || '00', e.target.value)}>
-        <option value="AM">AM</option>
-        <option value="PM">PM</option>
-      </select>
-    </div>
+    <>
+      <button type="button" className="form-select cl-chip" onClick={() => setOpen(true)} aria-haspopup="dialog"
+        aria-label={`${label}: ${shown || 'not set'}. Open clock`}
+        style={{ width: '100%', minWidth: 0, height: 40, padding: '0 10px', boxSizing: 'border-box', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, textAlign: 'left', cursor: 'pointer', fontSize: 14, color: shown ? '#182238' : 'var(--gray)', fontFamily: 'inherit' }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shown || 'Select time'}</span>
+        <span style={{ display: 'flex', color: '#1A336A' }}><FormIcon name="clock" size={16} /></span>
+      </button>
+      {open && <ClockDialog label={label} value={value} onChange={onChange} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 
@@ -183,6 +278,8 @@ const CL_PAGE_CSS = `
 .cl-chip:hover{border-color:#9DB2DD}
 .cl-chip:active:not(:disabled){transform:scale(.97)}
 .cl-chip:focus-visible,.cl-iconbtn:focus-visible,.cl-head:focus-visible,.cl-act:focus-visible,.cl-field:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+.cl-fab:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+.cl-fab:active:not(:disabled){transform:scale(.96)}
 .cl-act{transition:background-color .15s ease,border-color .15s ease,transform .12s ease}
 .cl-act:active{transform:scale(.95)}
 .cl-card{display:flex;align-items:flex-start;gap:10px;padding:12px;margin-bottom:8px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(16,32,64,.05);box-sizing:border-box;max-width:100%;transition:border-color .15s ease,box-shadow .15s ease}
@@ -203,7 +300,7 @@ const CL_CSS = `
 .cl-sheet .cl-btn:disabled{opacity:.6;cursor:not-allowed}
 .cl-grid{display:grid;gap:10px}
 .cl-grid.cl-2{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
-.cl-grid.cl-time{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.cl-grid.cl-time{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
 `;
 
 function FieldLabel({ htmlFor, id, icon, required, children }) {
@@ -226,7 +323,7 @@ function ClassLogSheet({
   const duration = calcDuration(values.inTime, values.outTime);
   const titleId = `${idp}-title`;
   const ctl = { width: '100%', minWidth: 0, height: 40, fontSize: 14, padding: '0 10px', boxSizing: 'border-box', background: '#fff' };
-  return (
+  return createPortal(
     <div
       className="modal-overlay active"
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 62, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(10,20,40,.55)', padding: 0, boxSizing: 'border-box' }}
@@ -339,11 +436,12 @@ function ClassLogSheet({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
-export default function ClassLogPage() {
+export default function ClassLogPage({ isActive = true }) {
   const { academyId, isAdmin, appUser, assignedSports, assignedBatches, canExport } = useAuth();
   const { visibleSports, visibleBatches } = useAcademyData();
 
@@ -408,6 +506,11 @@ export default function ClassLogPage() {
   };
 
   useEffect(() => { fetchEntries(); fetchClassLogCount(); }, [academyId, isAdmin, staffName]);
+
+  // Portalled overlays ignore display:none, so close them when this tab is deactivated.
+  useEffect(() => {
+    if (!isActive) { setShowAdd(false); setEditEntry(null); setPopup(null); }
+  }, [isActive]);
 
   // Realtime: keep the list in sync as admin/staff add, edit, or delete entries.
   useEffect(() => {
@@ -624,13 +727,6 @@ export default function ClassLogPage() {
               <button type="button" className="cl-act" style={roundBtn} onClick={handleExportXlsx} aria-label="Export Excel" title="Export Excel"><FormIcon name="sheet" size={17} /></button>
             </>
           )}
-          <LimitGatedButton
-            resource="classLogs"
-            currentCount={classLogCount}
-            className="btn btn-primary"
-            style={{ height: 36, padding: '0 14px', borderRadius: 18, fontSize: 13, fontWeight: 700, background: '#1A336A', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-            onClick={openAdd}
-          ><FormIcon name="plus" size={16} stroke={2.4} /> Add</LimitGatedButton>
         </div>
       </div>
 
@@ -757,9 +853,11 @@ export default function ClassLogPage() {
           return (
             <div key={e.id} className="cl-card">
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14.5, fontWeight: 700, color: '#182238', lineHeight: 1.25 }}>{dateDisp}</div>
-                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px' }}>
+                  <span style={{ fontSize: 14.5, fontWeight: 700, color: '#182238', lineHeight: 1.25 }}>{dateDisp}</span>
                   <ClChip icon="layers" tone="info">{bk.sport} : {bk.label}</ClChip>
+                </div>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 6 }}>
                   {inDisp && <ClChip icon="logIn" tone="success">In {inDisp}</ClChip>}
                   {outDisp && <ClChip icon="logOut" tone="danger">Out {outDisp}</ClChip>}
                   {e.duration && <ClChip icon="clock" tone="neutral">{e.duration}</ClChip>}
@@ -767,7 +865,7 @@ export default function ClassLogPage() {
                 {e.note && <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.5, marginTop: 8, overflowWrap: 'anywhere' }}>{e.note}</div>}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--gray)', marginTop: 8 }}>
                   <FormIcon name="userRound" size={12} />
-                  <span style={{ overflowWrap: 'anywhere' }}>{e.by} · {e.at ? new Date(e.at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                  <span style={{ overflowWrap: 'anywhere' }}>{e.by} · {e.at ? (() => { const dt = new Date(e.at); return `${dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}, ${fmt12(`${pad(dt.getHours())}:${pad(dt.getMinutes())}`)}`; })() : ''}</span>
                 </div>
               </div>
               {canEditEntry(e) && (
@@ -790,7 +888,7 @@ export default function ClassLogPage() {
       )}
 
       {/* ── Add Modal ── */}
-      {showAdd && (
+      {isActive && showAdd && (
         <ClassLogSheet
           idp="cl-add" mode="add"
           values={{ date: form.date, sport: form.sport, batch: form.batch, inTime: form.inTime, outTime: form.outTime, note: form.note }}
@@ -809,7 +907,7 @@ export default function ClassLogPage() {
       )}
 
       {/* ── Edit Modal ── */}
-      {editEntry && (
+      {isActive && editEntry && (
         <ClassLogSheet
           idp="cl-edit" mode="edit"
           subtitle={editEntry.by ? `Logged by ${editEntry.by}` : undefined}
@@ -825,6 +923,29 @@ export default function ClassLogPage() {
           onSubmit={saveEdit}
           submitLabel="Save Changes"
         />
+      )}
+      {/* Floating add button — same placement and look as EnquiryTab's + button */}
+      {isActive && !showAdd && !editEntry && createPortal(
+        <LimitGatedButton
+          resource="classLogs"
+          currentCount={classLogCount}
+          className="cl-fab"
+          aria-label="Add class log"
+          title="Add class log"
+          onClick={openAdd}
+          style={{
+            position: 'fixed',
+            right: 'max(18px, env(safe-area-inset-right, 0px))',
+            bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
+            width: 54, height: 54, padding: 0, borderRadius: '50%',
+            background: 'var(--accent2)', color: '#fff', border: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(26,51,106,.25)', cursor: 'pointer', zIndex: 500,
+          }}
+        >
+          <FormIcon name="plus" size={26} stroke={2.4} />
+        </LimitGatedButton>,
+        document.body
       )}
     </div>
   );
