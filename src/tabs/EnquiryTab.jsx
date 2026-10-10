@@ -15,14 +15,20 @@ const tomorrowIso = () => {
 };
 
 const CONVERSION_OPTIONS = [
-  { value: 'High', label: '🔥 High' },
-  { value: 'Medium', label: '⚡ Medium' },
-  { value: 'Low', label: '❄️ Low' },
+  { value: 'High', label: 'High' },
+  { value: 'Medium', label: 'Medium' },
+  { value: 'Low', label: 'Low' },
 ];
-const CONVERSION_BADGE = {
-  High: { bg: '#16a34a22', color: '#22c55e', icon: '🔥' },
-  Medium: { bg: '#d9770622', color: '#fb923c', icon: '⚡' },
-  Low: { bg: 'var(--card2)', color: 'var(--gray)', icon: '❄️' },
+// Semantic tone per conversion level (same meaning as before: High = green, Medium = amber, Low = neutral).
+const CONVERSION_BADGE = { High: 'success', Medium: 'warning', Low: 'neutral' };
+
+// One shared palette for every metadata chip so they all look identical in size and weight.
+const CHIP_TONES = {
+  neutral: { bg: 'var(--card2, #F1F5FB)', color: '#475569', border: 'var(--border, #DCE4F2)' },
+  info:    { bg: 'rgba(91,124,196,.10)', color: '#1A336A', border: 'rgba(91,124,196,.22)' },
+  danger:  { bg: '#FEF2F2', color: '#B91C1C', border: '#FECACA' },
+  success: { bg: '#ECFDF5', color: '#15803D', border: '#BBF7D0' },
+  warning: { bg: '#FFFBEB', color: '#B45309', border: '#FDE68A' },
 };
 
 function relTime(iso) {
@@ -52,7 +58,7 @@ function FilterPopup({ title, onClose, children }) {
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', borderRadius: 12, padding: 14, width: '85%', maxWidth: 320, maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 8px 30px rgba(0,0,0,.4)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div style={{ fontSize: 13, fontWeight: 800 }}>{title}</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--gray)', cursor: 'pointer' }}>×</button>
+          <button onClick={onClose} aria-label="Close filter" className="eq-iconbtn" style={{ background: 'none', border: 'none', color: 'var(--gray)', cursor: 'pointer', display: 'flex', padding: 4 }}><SheetIcon name="x" size={18} /></button>
         </div>
         {children}
       </div>
@@ -88,6 +94,15 @@ const SHEET_ICONS = {
   flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />,
   zap: <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />,
   snowflake: <path d="m10 20-1.25-2.5L6 18M10 4 8.75 6.5 6 6M14 20l1.25-2.5L18 18M14 4l1.25 2.5L18 6M17 21l-3-6h-4M17 3l-3 6 1.5 3M2 12h6.5L10 9M20 10l-1.5 2 1.5 2M22 12h-6.5L14 15M4 10l1.5 2L4 14M7 21l3-6-1.5-3M7 3l3 6h4" />,
+  messages: <><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z" /><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1" /></>,
+  funnel: <path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z" />,
+  search: <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></>,
+  calendarClock: <><path d="M16 14v2.2l1.6 1" /><path d="M16 2v4" /><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5" /><path d="M3 10h5" /><path d="M8 2v4" /><circle cx="16" cy="16" r="6" /></>,
+  plus: <><path d="M5 12h14" /><path d="M12 5v14" /></>,
+  alertCircle: <><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" /></>,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
+  chevronUp: <path d="m18 15-6-6-6 6" />,
+  notebookPen: <><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4" /><path d="M2 6h4M2 10h4M2 14h4M2 18h4" /><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" /></>,
 };
 
 function SheetIcon({ name, size = 16, stroke = 2 }) {
@@ -101,20 +116,33 @@ function SheetIcon({ name, size = 16, stroke = 2 }) {
 
 const BADGE_ICON = { High: 'flame', Medium: 'zap', Low: 'snowflake' };
 
-function ConversionBadge({ ratio }) {
-  if (!ratio) return null;
-  const b = CONVERSION_BADGE[ratio] || CONVERSION_BADGE.Low;
+// Compact, uniform chip: same height, padding, font size, radius and icon size everywhere.
+function MetaChip({ icon, tone = 'neutral', children, title }) {
+  const t = CHIP_TONES[tone] || CHIP_TONES.neutral;
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10.5, fontWeight: 700, background: b.bg, color: b.color, borderRadius: 6, padding: '2px 7px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-      <SheetIcon name={BADGE_ICON[ratio] || 'snowflake'} size={11} stroke={2.4} /> {ratio}
+    <span title={title} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 22, padding: '0 7px', boxSizing: 'border-box', fontSize: 11, fontWeight: 600, lineHeight: 1, background: t.bg, color: t.color, border: `1px solid ${t.border}`, borderRadius: 6, whiteSpace: 'nowrap', maxWidth: '100%', flexShrink: 0 }}>
+      {icon && <SheetIcon name={icon} size={12} stroke={2.2} />}
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{children}</span>
     </span>
   );
+}
+
+function ConversionBadge({ ratio }) {
+  if (!ratio) return null;
+  return <MetaChip icon={BADGE_ICON[ratio] || 'snowflake'} tone={CONVERSION_BADGE[ratio] || 'neutral'}>{ratio}</MetaChip>;
 }
 
 const SHEET_CSS = `
 .eq-sheet button:focus-visible,.eq-sheet a:focus-visible,.eq-sheet input:focus-visible,.eq-sheet select:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
 .eq-sheet .eq-btn{transition:transform .12s ease,background-color .15s ease,border-color .15s ease,opacity .15s ease}
 .eq-sheet .eq-btn:active:not(:disabled){transform:scale(.98)}
+`;
+
+const EQ_CSS = `
+.eq-card:focus-visible,.eq-fab:focus-visible,.eq-seg:focus-visible,.eq-iconbtn:focus-visible,.eq-filter-head:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+.eq-fab{transition:transform .12s ease,box-shadow .15s ease,opacity .15s ease}
+.eq-fab:active:not(:disabled){transform:scale(.96)}
+.eq-seg{transition:background-color .15s ease,color .15s ease}
 `;
 
 function Field({ label, children }) {
@@ -422,19 +450,26 @@ export default function EnquiryTab({ isActive = true }) {
 
   return (
     <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8 }}>
-        <div className="section-title" style={{ marginBottom: 0 }}>💬 Enquiries</div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 7, overflow: 'hidden' }}>
-            <button
-              onClick={() => setView('active')}
-              style={{ padding: '5px 10px', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', background: view === 'active' ? 'var(--accent2)' : 'transparent', color: view === 'active' ? '#fff' : 'var(--gray)' }}
-            >Active</button>
-            <button
-              onClick={() => setView('archive')}
-              style={{ padding: '5px 10px', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', background: view === 'archive' ? 'var(--accent2)' : 'transparent', color: view === 'archive' ? '#fff' : 'var(--gray)' }}
-            >🗄️ Archive</button>
-          </div>
+      <style>{EQ_CSS}</style>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8 }}>
+        <div className="section-title" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <SheetIcon name="messages" size={19} /> Enquiries
+        </div>
+        <div role="group" aria-label="Enquiry view" style={{ display: 'flex', alignItems: 'stretch', height: 30, border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', background: 'var(--card, #fff)', flexShrink: 0 }}>
+          <button
+            type="button"
+            className="eq-seg"
+            aria-pressed={view === 'active'}
+            onClick={() => setView('active')}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 12px', fontSize: 11.5, fontWeight: 700, border: 'none', cursor: 'pointer', background: view === 'active' ? 'var(--accent2)' : 'transparent', color: view === 'active' ? '#fff' : 'var(--gray)' }}
+          >Active</button>
+          <button
+            type="button"
+            className="eq-seg"
+            aria-pressed={view === 'archive'}
+            onClick={() => setView('archive')}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '0 12px', fontSize: 11.5, fontWeight: 700, border: 'none', cursor: 'pointer', background: view === 'archive' ? 'var(--accent2)' : 'transparent', color: view === 'archive' ? '#fff' : 'var(--gray)' }}
+          ><SheetIcon name="archive" size={13} /> Archive</button>
         </div>
       </div>
 
@@ -450,31 +485,34 @@ export default function EnquiryTab({ isActive = true }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
           onClick={() => setPanelOpen(p => !p)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontWeight: 700, fontSize: 13.5 }}>🔍 Filters</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 13.5 }}>
+              <span style={{ display: 'flex', color: 'var(--accent2)' }}><SheetIcon name="funnel" size={15} /></span> Filters
+            </span>
             {activeFilterCount > 0 && (
               <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 12, background: 'var(--accent2)', color: '#fff' }}>{activeFilterCount}</span>
             )}
           </div>
-          <button className="arrow-btn" style={{ width: 24, height: 24, fontSize: 11 }}
+          <button className="arrow-btn eq-iconbtn" style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+            aria-label={panelOpen ? 'Collapse filters' : 'Expand filters'} aria-expanded={panelOpen}
             onClick={(e) => { e.stopPropagation(); setPanelOpen(p => !p); }}>
-            {panelOpen ? '▲' : '▼'}
+            <SheetIcon name={panelOpen ? 'chevronUp' : 'chevronDown'} size={15} />
           </button>
         </div>
 
         {panelOpen && (
           <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <button className="btn btn-outline btn-sm" style={{ fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('conv')}>
+            <button className="btn btn-outline btn-sm" style={{ fontSize: 12, padding: '7px 9px', minHeight: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('conv')}>
               {CONVERSION_OPTIONS.find(o => o.value === filterConv)?.label || 'All Conversion'}
             </button>
-            <button className="btn btn-outline btn-sm" style={{ fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('sport')}>
+            <button className="btn btn-outline btn-sm" style={{ fontSize: 12, padding: '7px 9px', minHeight: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('sport')}>
               {filterSport || 'All Sports'}
             </button>
             {isAdmin && (
-              <button className="btn btn-outline btn-sm" style={{ fontSize: 12, padding: '7px 9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('staff')}>
-                {filterStaff === '__UNASSIGNED__' ? '— Unassigned —' : (staffList.find(u => u.id === filterStaff)?.name || staffList.find(u => u.id === filterStaff)?.id) || '👥 Assigned to: All'}
+              <button className="btn btn-outline btn-sm" style={{ fontSize: 12, padding: '7px 9px', minHeight: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('staff')}>
+                {filterStaff === '__UNASSIGNED__' ? '— Unassigned —' : (staffList.find(u => u.id === filterStaff)?.name || staffList.find(u => u.id === filterStaff)?.id) || 'Assigned to: All'}
               </button>
             )}
-            <input type="date" className="form-input" style={{ fontSize: 12, padding: '7px 9px' }} value={filterReminder} onChange={e => setFilterReminder(e.target.value)} />
+            <input type="date" className="form-input" aria-label="Filter by reminder date" style={{ fontSize: 12, padding: '7px 9px', minHeight: 36 }} value={filterReminder} onChange={e => setFilterReminder(e.target.value)} />
           </div>
         )}
       </div>
@@ -499,7 +537,7 @@ export default function EnquiryTab({ isActive = true }) {
 
       {popup === 'staff' && isAdmin && (
         <FilterPopup title="Filter by Assigned Staff" onClose={() => setPopup(null)}>
-          <RadioRow name="staffsel" checked={!filterStaff} onChange={() => { setFilterStaff(''); setPopup(null); }} label="👥 Assigned to: All" />
+          <RadioRow name="staffsel" checked={!filterStaff} onChange={() => { setFilterStaff(''); setPopup(null); }} label="Assigned to: All" />
           {staffList.slice().sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id)).map(u => (
             <RadioRow key={u.id} name="staffsel" checked={filterStaff === u.id} onChange={() => { setFilterStaff(u.id); setPopup(null); }} label={`${u.name || u.id}${u.role?.includes('admin') ? ' (Admin)' : ''}`} />
           ))}
@@ -508,17 +546,17 @@ export default function EnquiryTab({ isActive = true }) {
       )}
 
       <div className="search-wrap" style={{ marginBottom: 8 }}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-        <input type="text" className="search-input" placeholder="Search by name or phone…" value={search} onChange={e => setSearch(e.target.value)} />
-        {search && <button type="button" className="search-clear-btn" onClick={() => setSearch('')} aria-label="Clear search">✕</button>}
+        <SheetIcon name="search" size={15} />
+        <input type="text" className="search-input" aria-label="Search enquiries by name or phone" placeholder="Search by name or phone…" value={search} onChange={e => setSearch(e.target.value)} />
+        {search && <button type="button" className="search-clear-btn eq-iconbtn" onClick={() => setSearch('')} aria-label="Clear search" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SheetIcon name="x" size={14} /></button>}
       </div>
 
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 90 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}>
         {loading && <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 20, fontSize: 12 }}>Loading…</div>}
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30, fontSize: 13 }}>
-            {view === 'archive' ? '🗄️ No archived queries.' : (isAdmin ? <>No queries match your filters.<br />Tap <b>+ Add</b> to record one.</> : 'No queries assigned to you yet.')}
+            {view === 'archive' ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><SheetIcon name="archive" size={15} /> No archived queries.</span> : (isAdmin ? <>No queries match your filters.<br />Tap the <b>+</b> button to record one.</> : 'No queries assigned to you yet.')}
           </div>
         )}
         {filtered.map(q => {
@@ -526,32 +564,37 @@ export default function EnquiryTab({ isActive = true }) {
           const isOverdue = q.reminder_date && q.reminder_date < today;
           const noteCount = (q.staff_notes || []).length;
           return (
-            <div key={q.id} onClick={() => openDetail(q)} className="card hover-lift"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px', marginBottom: 7, cursor: 'pointer', border: `1px solid ${isOverdue ? '#ef444455' : 'var(--border)'}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0, flex: 1 }}>
-                <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--accent2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+            <div key={q.id} onClick={() => openDetail(q)} className="card hover-lift eq-card"
+              role="button" tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(q); } }}
+              style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, padding: '10px 12px', marginBottom: 8, cursor: 'pointer', border: '1px solid var(--border)', boxSizing: 'border-box', maxWidth: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minWidth: 0, flex: 1 }}>
+                <div aria-hidden="true" style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
                   {(q.name || '?').charAt(0).toUpperCase()}
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                    {q.name} <ConversionBadge ratio={q.conversion_ratio} />
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '3px 6px' }}>
+                    <span style={{ fontSize: 14.5, fontWeight: 700, lineHeight: 1.25, overflowWrap: 'anywhere' }}>{q.name}</span>
+                    <ConversionBadge ratio={q.conversion_ratio} />
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--accent2)' }}>📞 {q.phone || '—'}</div>
-                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 3 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'var(--accent2)', marginTop: 2, minWidth: 0 }}>
+                    <SheetIcon name="phone" size={12} stroke={2.2} /> <span style={{ overflowWrap: 'anywhere' }}>{q.phone || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 6 }}>
                     {q.reminder_date && (
-                      <span style={{ fontSize: 10, fontWeight: isOverdue ? 700 : 500, color: isOverdue ? '#f87171' : 'var(--gold)' }}>
-                        ⏰ {q.reminder_date}{isOverdue ? ' (overdue)' : ''}
-                      </span>
+                      <MetaChip icon="calendarClock" tone={isOverdue ? 'danger' : 'info'}>
+                        {q.reminder_date}{isOverdue ? ' · overdue' : ''}
+                      </MetaChip>
                     )}
                     {q.assigned_to
-                      ? <span style={{ fontSize: 10, background: 'var(--card2)', color: 'var(--accent2)', borderRadius: 5, padding: '2px 6px' }}>👤 {assignedName(q.assigned_to)}</span>
-                      : (isAdmin && <span style={{ fontSize: 10, background: 'var(--card2)', color: 'var(--gray)', borderRadius: 5, padding: '2px 6px' }}>Unassigned</span>)}
-                    {noteCount > 0 && <span style={{ fontSize: 10, background: 'var(--card2)', color: 'var(--gold)', borderRadius: 5, padding: '2px 6px' }}>📝 {noteCount} note{noteCount > 1 ? 's' : ''}</span>}
-                    {isAdmin && q.created_by && <span style={{ fontSize: 10, background: 'var(--card2)', color: 'var(--gray)', borderRadius: 5, padding: '2px 6px' }}>✍️ {q.created_by}</span>}
+                      ? <MetaChip icon="userRound">{assignedName(q.assigned_to)}</MetaChip>
+                      : (isAdmin && <MetaChip icon="userRound">Unassigned</MetaChip>)}
+                    {noteCount > 0 && <MetaChip icon="notebookPen">{noteCount} note{noteCount > 1 ? 's' : ''}</MetaChip>}
+                    {isAdmin && q.created_by && <MetaChip icon="userCheck">{q.created_by}</MetaChip>}
                   </div>
                 </div>
               </div>
-              <div style={{ fontSize: 10, color: 'var(--gray)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relTime(q.created_at)}</div>
+              <div style={{ fontSize: 11, color: 'var(--gray)', flexShrink: 0, whiteSpace: 'nowrap', paddingTop: 2 }}>{relTime(q.created_at)}</div>
             </div>
           );
         })}
@@ -561,73 +604,97 @@ export default function EnquiryTab({ isActive = true }) {
         <button
           onClick={openAdd}
           disabled={atEnquiryLimit}
+          className="eq-fab"
           aria-label={atEnquiryLimit ? 'Enquiry limit reached' : 'Add enquiry'}
-          title={atEnquiryLimit ? `Limit reached (${limits.enquiries} enquiries) on ${plan?.name} plan` : undefined}
+          title={atEnquiryLimit ? `Limit reached (${limits.enquiries} enquiries) on ${plan?.name} plan` : 'Add enquiry'}
           style={{
             position: 'fixed',
-            right: 18,
-            bottom: 76,
+            right: 'max(18px, env(safe-area-inset-right, 0px))',
+            bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
             width: 54,
             height: 54,
+            padding: 0,
             borderRadius: '50%',
             background: atEnquiryLimit ? 'var(--gray)' : 'var(--accent2)',
             color: '#fff',
             border: 'none',
-            fontSize: 26,
-            fontWeight: 600,
-            lineHeight: 1,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 6px 16px rgba(0,0,0,.28)',
+            boxShadow: '0 4px 12px rgba(26,51,106,.25)',
             cursor: atEnquiryLimit ? 'not-allowed' : 'pointer',
             opacity: atEnquiryLimit ? 0.6 : 1,
             zIndex: 500,
           }}
         >
-          +
+          <SheetIcon name="plus" size={26} stroke={2.4} />
         </button>,
         document.body
       )}
 
       {isActive && showAdd && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 62, background: 'rgba(10,20,40,.55)', zIndex: 250, display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowAdd(false)}>
-          <div className="card" style={{ width: '100%', maxWidth: 480, margin: '0 auto', maxHeight: '85vh', overflowY: 'auto', padding: 16 }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 12 }}>💬 New Query</div>
-            {addError && <div style={{ fontSize: 12.5, color: '#dc2626', background: 'rgba(220,38,38,.08)', border: '1px solid rgba(220,38,38,.25)', borderRadius: 8, padding: '8px 10px', marginBottom: 10 }}>⚠️ {addError}</div>}
+          <div
+            className="eq-sheet"
+            role="dialog" aria-modal="true" aria-label="New enquiry"
+            style={{
+              width: '100%', maxWidth: 480, margin: '0 auto', maxHeight: '100%', overflowY: 'auto', overscrollBehavior: 'contain',
+              background: 'var(--card, #fff)', border: '1px solid var(--border)', borderBottom: 'none',
+              borderRadius: '16px 16px 0 0', boxShadow: '0 -6px 20px rgba(10,20,40,.16)',
+              padding: '14px 14px calc(14px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <style>{SHEET_CSS}</style>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(91,124,196,.12)', color: '#1A336A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><SheetIcon name="messages" size={18} /></span>
+                <div style={{ fontWeight: 700, fontSize: 17, color: '#182238', lineHeight: 1.2 }}>New Query</div>
+              </div>
+              <button type="button" className="eq-btn" onClick={() => setShowAdd(false)} aria-label="Close new enquiry"
+                style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--card2)', border: '1px solid var(--border)', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}>
+                <SheetIcon name="x" size={16} />
+              </button>
+            </div>
+            {addError && (
+              <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: '#B91C1C', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '8px 10px', marginBottom: 10 }}>
+                <span style={{ display: 'flex', marginTop: 1 }}><SheetIcon name="alertCircle" size={15} /></span>
+                <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{addError}</span>
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Field label="Name *"><input ref={nameInputRef} className={inputStyle} value={addForm.name} onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} /></Field>
-              <Field label="Phone"><input className={inputStyle} maxLength={10} value={addForm.phone} onChange={e => setAddForm(f => ({ ...f, phone: normalizePhone(e.target.value).slice(0, 10) }))} placeholder="10-digit mobile number" /></Field>
-              <Field label="Location / Area"><input className={inputStyle} value={addForm.location} onChange={e => setAddForm(f => ({ ...f, location: e.target.value }))} /></Field>
+              <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1A336A' }}><SheetIcon name="userRound" size={13} /> Name *</span>}><input ref={nameInputRef} className={inputStyle} style={{ height: 40, boxSizing: 'border-box', background: '#fff' }} value={addForm.name} onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} /></Field>
+              <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1A336A' }}><SheetIcon name="phone" size={13} /> Phone</span>}><input className={inputStyle} style={{ height: 40, boxSizing: 'border-box', background: '#fff' }} type="tel" inputMode="numeric" maxLength={10} value={addForm.phone} onChange={e => setAddForm(f => ({ ...f, phone: normalizePhone(e.target.value).slice(0, 10) }))} placeholder="10-digit mobile number" /></Field>
+              <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1A336A' }}><SheetIcon name="mapPin" size={13} /> Location / Area</span>}><input className={inputStyle} style={{ height: 40, boxSizing: 'border-box', background: '#fff' }} value={addForm.location} onChange={e => setAddForm(f => ({ ...f, location: e.target.value }))} /></Field>
               <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr 1fr' : '1fr', gap: 10 }}>
                 {isAdmin && (
-                  <Field label="👤 Assign to Staff">
-                    <select className="form-select" value={addForm.assignedTo} onChange={e => setAddForm(f => ({ ...f, assignedTo: e.target.value }))}>
+                  <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1A336A' }}><SheetIcon name="userCheck" size={13} /> Assign to Staff</span>}>
+                    <select className="form-select" style={{ height: 40, boxSizing: 'border-box', background: '#fff' }} value={addForm.assignedTo} onChange={e => setAddForm(f => ({ ...f, assignedTo: e.target.value }))}>
                       <option value="">— Unassigned —</option>
                       {staffList.map(u => <option key={u.id} value={u.id}>{u.name || u.id}</option>)}
                     </select>
                   </Field>
                 )}
-                <Field label="Sport of interest">
-                  <select className="form-select" value={addForm.sport} onChange={e => setAddForm(f => ({ ...f, sport: e.target.value }))}>
+                <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1A336A' }}><SheetIcon name="medal" size={13} /> Sport of interest</span>}>
+                  <select className="form-select" style={{ height: 40, boxSizing: 'border-box', background: '#fff' }} value={addForm.sport} onChange={e => setAddForm(f => ({ ...f, sport: e.target.value }))}>
                     <option value="">Not specified</option>
                     {visibleSports.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                   </select>
                 </Field>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <Field label="Conversion Ratio">
-                  <select className="form-select" value={addForm.conversionRatio} onChange={e => setAddForm(f => ({ ...f, conversionRatio: e.target.value }))}>
+                <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1A336A' }}><SheetIcon name="flame" size={13} /> Conversion Ratio</span>}>
+                  <select className="form-select" style={{ height: 40, boxSizing: 'border-box', background: '#fff' }} value={addForm.conversionRatio} onChange={e => setAddForm(f => ({ ...f, conversionRatio: e.target.value }))}>
                     <option value="">Select…</option>
                     {CONVERSION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </Field>
-                <Field label="📅 Next Reminder Date"><input type="date" className={inputStyle} value={addForm.reminderDate} onChange={e => setAddForm(f => ({ ...f, reminderDate: e.target.value }))} /></Field>
+                <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1A336A' }}><SheetIcon name="calendarClock" size={13} /> Next Reminder</span>}><input type="date" className={inputStyle} style={{ height: 40, boxSizing: 'border-box', background: '#fff' }} value={addForm.reminderDate} onChange={e => setAddForm(f => ({ ...f, reminderDate: e.target.value }))} /></Field>
               </div>
-              <Field label="Query / Interest"><textarea className={inputStyle} rows={3} style={{ resize: 'none' }} value={addForm.query} onChange={e => setAddForm(f => ({ ...f, query: e.target.value }))} placeholder="What are they enquiring about?" /></Field>
+              <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1A336A' }}><SheetIcon name="fileText" size={13} /> Query / Interest</span>}><textarea className={inputStyle} rows={3} style={{ resize: 'none', boxSizing: 'border-box', background: '#fff' }} value={addForm.query} onChange={e => setAddForm(f => ({ ...f, query: e.target.value }))} placeholder="What are they enquiring about?" /></Field>
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowAdd(false)}>Cancel</button>
-                <button className="btn btn-primary" style={{ flex: 1.4 }} onClick={saveEnquiry}>💾 Save Query</button>
+                <button type="button" className="btn btn-outline eq-btn" style={{ flex: 1, minHeight: 44, borderRadius: 12, color: '#1A336A', fontWeight: 600 }} onClick={() => setShowAdd(false)}>Cancel</button>
+                <button type="button" className="btn eq-btn" style={{ flex: 1.4, minHeight: 44, borderRadius: 12, background: '#1A336A', color: '#fff', border: 'none', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={saveEnquiry}><SheetIcon name="save" size={16} /> Save Query</button>
               </div>
             </div>
           </div>
