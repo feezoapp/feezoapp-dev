@@ -47,6 +47,53 @@ function countPeriods(program, todayIsoStr) {
   return Math.round((end - start) / (24 * 60 * 60 * 1000)) + 1;
 }
 
+
+// ── Presentation-only helpers (icons + styles). No logic lives here. ──
+const PF_ICONS = {
+  trophy: <><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></>,
+  search: <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></>,
+  x: <path d="M18 6 6 18M6 6l12 12" />,
+  funnel: <path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z" />,
+  list: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />,
+  plus: <path d="M5 12h14M12 5v14" />,
+  calendarCheck: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /><path d="m9 16 2 2 4-4" /></>,
+  award: <><circle cx="12" cy="8" r="6" /><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" /></>,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
+  chevronUp: <path d="m18 15-6-6-6 6" />,
+  chevronRight: <path d="m9 6 6 6-6 6" />,
+  clipboardList: <><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01" /></>,
+};
+function PfIcon({ name, size = 16, stroke = 2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke}
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      {PF_ICONS[name]}
+    </svg>
+  );
+}
+
+const PF_CSS = `
+.pf-btn,.pf-card,.pf-head,.pf-chart,.pf-iconbtn{transition:transform .12s ease,border-color .15s ease,background-color .15s ease,box-shadow .15s ease}
+.pf-btn:active:not(:disabled),.pf-chart:active{transform:scale(.96)}
+.pf-card:active{transform:scale(.995)}
+@media (hover:hover){.pf-card:hover{border-color:#B9C7E6;box-shadow:0 2px 8px rgba(16,32,64,.07)}}
+.pf-btn:focus-visible,.pf-card:focus-visible,.pf-head:focus-visible,.pf-chart:focus-visible,.pf-iconbtn:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+@keyframes pf-fade{from{opacity:0}to{opacity:1}}
+@keyframes pf-pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.pf-overlay{animation:pf-fade .15s ease}
+.pf-popup{animation:pf-pop .16s ease}
+@media (prefers-reduced-motion:reduce){.pf-btn,.pf-card,.pf-head,.pf-chart,.pf-overlay,.pf-popup{animation:none !important;transition:none !important}}
+`;
+
+const pfActionBtn = { height: 36, padding: '0 12px', borderRadius: 10, fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' };
+const pfFilterBtn = { flex: '1 1 45%', minWidth: 0, height: 40, padding: '0 10px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, cursor: 'pointer', fontFamily: 'inherit', background: '#fff', color: '#1A336A', border: '1px solid var(--border)', boxSizing: 'border-box' };
+const pfRadioRow = { display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, minHeight: 42, padding: '8px 10px', borderRadius: 10, cursor: 'pointer', margin: '2px 0', color: '#333' };
+const pfRadioInput = { width: 18, height: 18, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' };
+
+function PfTruncLabel({ children }) {
+  return <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{children}</span>;
+}
+
 function PerformancePageContent() {
   const { academyId, isAdmin, user, appUser } = useAuth();
   const { visibleStudents, visibleSports } = useAcademyData();
@@ -262,7 +309,8 @@ function PerformancePageContent() {
     return list;
   }, [rows, search, sortDir]);
   return (
-    <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', paddingBottom: 90 }}>
+    <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', paddingBottom: 'calc(90px + env(safe-area-inset-bottom, 0px))' }}>
+      <style>{PF_CSS}</style>
       {chartsFor ? (
         <StudentChartsModal
           row={chartsFor}
@@ -290,122 +338,152 @@ function PerformancePageContent() {
         />
       ) : (
       <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <div className="section-title" style={{ marginBottom: 0 }}>🏆 Performance Leaderboard</div>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 10, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1A336A', minWidth: 0 }}>
+          <PfIcon name="trophy" size={20} />
+          <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-.01em' }}>Performance Leaderboard</span>
+        </div>
         {isAdmin && (
-          <div style={{ display: 'flex', gap: 5 }}>
-            <button className="btn btn-outline btn-sm" style={{ fontSize: 11, padding: '5px 9px' }} onClick={() => navigate('/admin/performance/programs')}>List</button>
-            <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: '5px 9px' }} onClick={() => navigate('/admin/performance/add')}>+ Add</button>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button type="button" className="pf-btn" style={{ ...pfActionBtn, background: '#fff', color: '#1A336A', border: '1px solid var(--border)' }} onClick={() => navigate('/admin/performance/programs')}>
+              <PfIcon name="list" size={15} /> List
+            </button>
+            <button type="button" className="pf-btn" style={{ ...pfActionBtn, background: '#1A336A', color: '#fff', border: 'none' }} onClick={() => navigate('/admin/performance/add')}>
+              <PfIcon name="plus" size={15} stroke={2.4} /> Add
+            </button>
           </div>
         )}
       </div>
 
-      {/* search with clear button */}
-      <div style={{ position: 'relative', marginBottom: 8 }}>
+      {/* search with clear button — same markup/classes as the Students tab */}
+      <div className="search-wrap" style={{ marginBottom: 8 }}>
+        <PfIcon name="search" size={15} />
         <input
-          className="form-input"
-          style={{ width: '100%', fontSize: 13, padding: '9px 30px 9px 10px' }}
+          type="text"
+          className="search-input"
+          aria-label="Search student"
           placeholder="Search student…"
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
         {search && (
-          <button
-            onClick={() => setSearch('')}
-            style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--gray)', fontSize: 15, cursor: 'pointer', padding: 2 }}
-          >✕</button>
+          <button type="button" className="search-clear-btn pf-iconbtn" onClick={() => setSearch('')} aria-label="Clear search"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <PfIcon name="x" size={14} />
+          </button>
         )}
       </div>
 
-      {/* collapse bar */}
-      <button
-        onClick={() => setFiltersOpen(o => !o)}
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', fontSize: 12, fontWeight: 700, color: 'var(--offwhite)', marginBottom: filtersOpen ? 8 : 12, cursor: 'pointer' }}
-      >
-        <span>Filters &amp; Sort</span>
-        <span style={{ color: 'var(--gray)' }}>{filtersOpen ? '▲' : '▼'}</span>
-      </button>
+      {/* filters card */}
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 10px', marginBottom: 8, boxShadow: '0 1px 2px rgba(16,32,64,.05)', flexShrink: 0 }}>
+        <button
+          type="button"
+          className="pf-head"
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen(o => !o)}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, width: '100%', minHeight: 36, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1A336A', fontWeight: 600, fontSize: 14 }}>
+            <PfIcon name="funnel" size={16} /> Filters &amp; Sort
+          </span>
+          <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--card2)', color: '#1A336A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <PfIcon name={filtersOpen ? 'chevronUp' : 'chevronDown'} size={16} />
+          </span>
+        </button>
 
-      {filtersOpen && (
-        <div style={{ background: 'var(--card2)', borderRadius: 10, padding: 12, marginBottom: 12 }}>
-          {/* date range for attendance calculation */}
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gray)', marginBottom: 5 }}>DATE RANGE</div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12, alignItems: 'center' }}>
-            <input type="date" className="form-input" style={{ flex: 1, fontSize: 11, padding: '7px 6px' }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-            <span style={{ fontSize: 11, color: 'var(--gray)' }}>–</span>
-            <input type="date" className="form-input" style={{ flex: 1, fontSize: 11, padding: '7px 6px' }} value={dateTo} onChange={e => setDateTo(e.target.value)} />
-          </div>
+        {filtersOpen && (
+          <div style={{ padding: '8px 0 8px', borderTop: '1px solid var(--border)', marginTop: 4 }}>
+            {/* date range for attendance calculation */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#1A336A', marginBottom: 6 }}>
+              <PfIcon name="calendarCheck" size={14} /> Date range
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 12, alignItems: 'center' }}>
+              <input type="date" className="form-input" aria-label="From date" style={{ flex: 1, minWidth: 0, height: 40, fontSize: 13, padding: '0 8px', boxSizing: 'border-box', background: '#fff' }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+              <span style={{ fontSize: 12, color: 'var(--gray)' }}>–</span>
+              <input type="date" className="form-input" aria-label="To date" style={{ flex: 1, minWidth: 0, height: 40, fontSize: 13, padding: '0 8px', boxSizing: 'border-box', background: '#fff' }} value={dateTo} onChange={e => setDateTo(e.target.value)} />
+            </div>
 
-          {/* program / sport / batch / sort — wraps to two rows on narrow screens */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button className="btn btn-outline btn-sm" style={{ flex: 1, minWidth: '45%', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('program')}>
-              {selectedProgram?.name || 'Program'}
-            </button>
-            <button className="btn btn-outline btn-sm" style={{ flex: 1, minWidth: '45%', fontSize: 11 }} onClick={() => setPopup('sport')}>
-              {selectedSport || 'Sport'}
-            </button>
-            <button className="btn btn-outline btn-sm" style={{ flex: 1, minWidth: '45%', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('batch')}>
-              {batchesForSport.find(b => b.batch === selectedBatch)?.batchLabel || 'All Batches'}
-            </button>
-            <button className="btn btn-outline btn-sm" style={{ flex: 1, minWidth: '45%', fontSize: 11 }} onClick={() => setPopup('sort')}>
-              Sort
-            </button>
+            {/* program / sport / batch / sort — wraps to two rows on narrow screens */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" className="pf-btn" style={pfFilterBtn} onClick={() => setPopup('program')}>
+                <PfTruncLabel>{selectedProgram?.name || 'Program'}</PfTruncLabel>
+                <PfIcon name="chevronDown" size={14} />
+              </button>
+              <button type="button" className="pf-btn" style={pfFilterBtn} onClick={() => setPopup('sport')}>
+                <PfTruncLabel>{selectedSport || 'Sport'}</PfTruncLabel>
+                <PfIcon name="chevronDown" size={14} />
+              </button>
+              <button type="button" className="pf-btn" style={pfFilterBtn} onClick={() => setPopup('batch')}>
+                <PfTruncLabel>{batchesForSport.find(b => b.batch === selectedBatch)?.batchLabel || 'All Batches'}</PfTruncLabel>
+                <PfIcon name="chevronDown" size={14} />
+              </button>
+              <button type="button" className="pf-btn" style={pfFilterBtn} onClick={() => setPopup('sort')}>
+                <PfTruncLabel>Sort</PfTruncLabel>
+                <PfIcon name="chevronDown" size={14} />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* popups */}
       {popup && (
         <div
+          className="pf-overlay"
           onClick={() => setPopup(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          role="dialog" aria-modal="true"
+          style={{ position: 'fixed', inset: 0, background: 'rgba(10,18,35,.5)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
         >
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', borderRadius: 12, padding: 14, width: '85%', maxWidth: 320, maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 8px 30px rgba(0,0,0,.4)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 800 }}>
+          <div className="pf-popup" onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, padding: '14px 12px 10px', width: '100%', maxWidth: 320, maxHeight: 'min(68vh, 480px)', overflowY: 'auto', boxShadow: '0 12px 32px rgba(10,18,35,.24)' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: 6, padding: '0 4px' }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700, color: '#1A336A', textAlign: 'center' }}>
                 {popup === 'sport' ? 'Select Sport' : popup === 'program' ? 'Select Program' : popup === 'batch' ? 'Select Batch' : 'Sort By'}
               </div>
-              <button onClick={() => setPopup(null)} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--gray)', cursor: 'pointer' }}>×</button>
+              <button type="button" className="pf-iconbtn" onClick={() => setPopup(null)} aria-label="Close"
+                style={{ position: 'absolute', right: 0, width: 28, height: 28, borderRadius: '50%', background: '#F1F3F8', border: 'none', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                <PfIcon name="x" size={15} />
+              </button>
             </div>
 
             {popup === 'sport' && visibleSports.map(s => (
-              <label key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-                <input type="radio" name="sportsel" checked={selectedSport === s.name} onChange={() => { setSelectedSport(s.name); setPopup(null); }} />
+              <label key={s.name} style={{ ...pfRadioRow, background: selectedSport === s.name ? 'rgba(91,124,196,.12)' : 'transparent', color: selectedSport === s.name ? '#1A336A' : '#333', fontWeight: selectedSport === s.name ? 600 : 500 }}>
+                <input style={pfRadioInput} type="radio" name="sportsel" checked={selectedSport === s.name} onChange={() => { setSelectedSport(s.name); setPopup(null); }} />
                 {s.name}
               </label>
             ))}
 
             {popup === 'batch' && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-                <input type="radio" name="batchsel" checked={!selectedBatch} onChange={() => { setSelectedBatch(''); setPopup(null); }} />
+              <label style={{ ...pfRadioRow, background: !selectedBatch ? 'rgba(91,124,196,.12)' : 'transparent', color: !selectedBatch ? '#1A336A' : '#333', fontWeight: !selectedBatch ? 600 : 500 }}>
+                <input style={pfRadioInput} type="radio" name="batchsel" checked={!selectedBatch} onChange={() => { setSelectedBatch(''); setPopup(null); }} />
                 All Batches
               </label>
             )}
             {popup === 'batch' && batchesForSport.map(b => (
-              <label key={b.batch} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-                <input type="radio" name="batchsel" checked={selectedBatch === b.batch} onChange={() => { setSelectedBatch(b.batch); setPopup(null); }} />
+              <label key={b.batch} style={{ ...pfRadioRow, background: selectedBatch === b.batch ? 'rgba(91,124,196,.12)' : 'transparent', color: selectedBatch === b.batch ? '#1A336A' : '#333', fontWeight: selectedBatch === b.batch ? 600 : 500 }}>
+                <input style={pfRadioInput} type="radio" name="batchsel" checked={selectedBatch === b.batch} onChange={() => { setSelectedBatch(b.batch); setPopup(null); }} />
                 {b.batchLabel}
               </label>
             ))}
             {popup === 'batch' && batchesForSport.length === 0 && (
-              <div style={{ fontSize: 12, color: 'var(--gray)', padding: '8px 2px' }}>No batches found for {selectedSport}.</div>
+              <div style={{ fontSize: 13, color: 'var(--gray)', padding: '8px 10px' }}>No batches found for {selectedSport}.</div>
             )}
 
             {popup === 'program' && programsForSport.length === 0 && (
-              <div style={{ fontSize: 12, color: 'var(--gray)', padding: '8px 2px' }}>No active programs for {selectedSport}.</div>
+              <div style={{ fontSize: 13, color: 'var(--gray)', padding: '8px 10px' }}>No active programs for {selectedSport}.</div>
             )}
             {popup === 'program' && programsForSport.map(p => (
-              <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-                <input type="radio" name="programsel" checked={selectedProgramId === p.id} onChange={() => { setSelectedProgramId(p.id); setPopup(null); }} />
-                {p.name}
+              <label key={p.id} style={{ ...pfRadioRow, background: selectedProgramId === p.id ? 'rgba(91,124,196,.12)' : 'transparent', color: selectedProgramId === p.id ? '#1A336A' : '#333', fontWeight: selectedProgramId === p.id ? 600 : 500 }}>
+                <input style={pfRadioInput} type="radio" name="programsel" checked={selectedProgramId === p.id} onChange={() => { setSelectedProgramId(p.id); setPopup(null); }} />
+                <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{p.name}</span>
               </label>
             ))}
 
             {popup === 'sort' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {[{ v: 'desc', l: 'High to Low' }, { v: 'asc', l: 'Low to High' }].map(o => (
-                  <label key={o.v} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-                    <input type="radio" name="sortdir" checked={sortDir === o.v} onChange={() => { setSortDir(o.v); setPopup(null); }} />
+                  <label key={o.v} style={{ ...pfRadioRow, background: sortDir === o.v ? 'rgba(91,124,196,.12)' : 'transparent', color: sortDir === o.v ? '#1A336A' : '#333', fontWeight: sortDir === o.v ? 600 : 500 }}>
+                    <input style={pfRadioInput} type="radio" name="sortdir" checked={sortDir === o.v} onChange={() => { setSortDir(o.v); setPopup(null); }} />
                     {o.l}
                   </label>
                 ))}
@@ -415,52 +493,69 @@ function PerformancePageContent() {
         </div>
       )}
 
-      {loading && <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 20 }}>Loading…</div>}
+      {loading && <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 20, fontSize: 13 }}>Loading…</div>}
 
       {!loading && !selectedProgram && (
-        <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 40, fontSize: 13 }}>
-          No program created{selectedSport ? ` for ${selectedSport}` : ''}.
+        <div style={{ textAlign: 'center', color: 'var(--gray)', padding: '28px 20px', fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: '#9DB2DD' }}><PfIcon name="clipboardList" size={28} /></span>
+          <div>No program created{selectedSport ? ` for ${selectedSport}` : ''}.</div>
           {isAdmin && (
-            <div style={{ marginTop: 10 }}>
-              <button className="btn btn-primary btn-sm" onClick={() => navigate('/admin/performance/add')}>+ Add Program</button>
+            <div style={{ marginTop: 6 }}>
+              <button type="button" className="pf-btn" style={{ ...pfActionBtn, background: '#1A336A', color: '#fff', border: 'none' }} onClick={() => navigate('/admin/performance/add')}>
+                <PfIcon name="plus" size={15} stroke={2.4} /> Add Program
+              </button>
             </div>
           )}
         </div>
       )}
 
       {!loading && selectedProgram && filteredRows.map((r, i) => (
-        <div key={r.key} className="card" style={{ padding: 12, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-          onClick={() => setHistoryFor(r)}>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--accent2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
+        <div key={r.key} className="pf-card" role="button" tabIndex={0}
+          onClick={() => setHistoryFor(r)}
+          onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setHistoryFor(r); } }}
+          style={{ padding: '10px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 1px 2px rgba(16,32,64,.05)', boxSizing: 'border-box', maxWidth: '100%' }}>
+          <div aria-hidden="true" style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
             {i + 1}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700 }}>{r.student.name}</div>
-            <div style={{ fontSize: 11, color: 'var(--gray)' }}>{r.sport} · {r.batchLabel}</div>
-            <div style={{ fontSize: 10, color: 'var(--gray)', marginTop: 2 }}>
-              📆 {r.attendancePct.toFixed(0)}% · 🏆 {r.coursePct.toFixed(0)}%
+            <div style={{ fontWeight: 700, fontSize: 14.5, color: '#182238', lineHeight: 1.25, overflowWrap: 'anywhere' }}>{r.student.name}</div>
+            <div style={{ fontSize: 12, color: '#64748B', marginTop: 2, overflowWrap: 'anywhere' }}>{r.sport} · {r.batchLabel}</div>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 12px', fontSize: 11.5, color: '#475569', marginTop: 4 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Attendance" aria-label={`Attendance ${r.attendancePct.toFixed(0)}%`}>
+                <PfIcon name="calendarCheck" size={13} /> {r.attendancePct.toFixed(0)}%
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Points" aria-label={`Points ${r.coursePct.toFixed(0)}%`}>
+                <PfIcon name="award" size={13} /> {r.coursePct.toFixed(0)}%
+              </span>
             </div>
           </div>
           {/* chart icon column — fixed width so it lines up in a straight column
               across every row, right next to the total-points column */}
-          <div style={{ width: 30, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 34, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
             <span
+              className="pf-chart"
               onClick={(e) => { e.stopPropagation(); setChartsFor(r); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setChartsFor(r); } }}
               title="View charts"
+              aria-label={`View charts for ${r.student.name}`}
               role="button"
+              tabIndex={0}
               style={{
-                display: 'inline-block', width: 20, height: 20, borderRadius: '50%', cursor: 'pointer', position: 'relative', flexShrink: 0,
+                display: 'inline-block', width: 22, height: 22, borderRadius: '50%', cursor: 'pointer', position: 'relative', flexShrink: 0,
                 background: 'conic-gradient(#f4695f 0deg 60deg, #f8c559 60deg 120deg, #1a9e4c 120deg 180deg, #5b9bd9 180deg 240deg, #1976d2 240deg 300deg, #b04a4a 300deg 360deg)',
               }}
             >
-              <span style={{ position: 'absolute', inset: 4.5, borderRadius: '50%', background: 'var(--card)' }} />
+              <span style={{ position: 'absolute', inset: 5, borderRadius: '50%', background: 'var(--card)' }} />
             </span>
           </div>
-          <div style={{ width: 44, textAlign: 'right', fontWeight: 800, color: 'var(--accent2)', fontSize: 15, flexShrink: 0 }}>{r.finalScore.toFixed(0)}</div>
+          <div style={{ width: 44, textAlign: 'right', fontWeight: 800, color: '#1A336A', fontSize: 16, flexShrink: 0 }} aria-label={`Score ${r.finalScore.toFixed(0)}`}>{r.finalScore.toFixed(0)}</div>
         </div>
       ))}
       {!loading && selectedProgram && filteredRows.length === 0 && (
-        <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30 }}>No students match the current filters.</div>
+        <div style={{ textAlign: 'center', color: 'var(--gray)', padding: '28px 20px', fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: '#9DB2DD' }}><PfIcon name="search" size={28} /></span>
+          No students match the current filters.
+        </div>
       )}
 
       </>
