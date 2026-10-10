@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { isDue, getDueDate, missingPeriodsFor } from '../lib/scheduleUtils';
+import { PfIcon, PfBadge, PfEmpty, PfStudentHeader, PF_CSS, pfCardStyle } from './perfUi';
 
 export default function StudentHistoryModal({
   row, programs, challenges, pointsRecords, onClose, onAddPoints,
@@ -56,89 +57,89 @@ export default function StudentHistoryModal({
   return (
     // Rendered in-flow as page content, same pattern as the charts page.
     <div style={{ maxWidth: 560, margin: '0 auto', width: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: 'var(--gray)', cursor: 'pointer', padding: 4 }}>←</button>
-        <div>
-          <div style={{ fontSize: 16, fontWeight: 800 }}>{row.student.name}</div>
-          <div style={{ fontSize: 11, color: 'var(--gray)' }}>{row.sport} · {row.batchLabel}</div>
-        </div>
-      </div>
+      <style>{PF_CSS}</style>
+      <PfStudentHeader onBack={onClose} name={row.student.name} sub={`${row.sport} · ${row.batchLabel}`} />
 
       {programCards.length === 0 && (
-        <div style={{ fontSize: 12, color: 'var(--gray)', textAlign: 'center', padding: 24 }}>
-          No programs set up for {row.sport} yet.
-        </div>
+        <PfEmpty icon="clipboardList">No programs set up for {row.sport} yet.</PfEmpty>
       )}
 
       {programCards.map(pc => {
         const isOpen = expandedProgram === pc.program.id;
         return (
-          <div key={pc.program.id} className="card" style={{ padding: 14, borderRadius: 14, marginBottom: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 14 }}>{pc.program.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--gray)', textTransform: 'capitalize' }}>{pc.program.frequency || 'weekly'} entry</div>
-                {pc.missing.length > 0 && (
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', marginTop: 2 }}>
-                    {pc.missing.length} missing
-                  </div>
-                )}
+          <div key={pc.program.id} style={{ ...pfCardStyle, padding: 12, marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 14.5, color: '#182238', lineHeight: 1.25, overflowWrap: 'anywhere' }}>{pc.program.name}</div>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px', marginTop: 4 }}>
+                  <span style={{ fontSize: 12, color: '#64748B', textTransform: 'capitalize', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <PfIcon name="clock" size={13} /> {pc.program.frequency || 'weekly'} entry
+                  </span>
+                  {pc.missing.length > 0 && <PfBadge tone="danger">{pc.missing.length} missing</PfBadge>}
+                </div>
               </div>
               <button
+                type="button"
+                className="pf-btn"
                 onClick={() => pc.canAdd && onAddPoints(pc.program.id)}
                 disabled={!pc.canAdd}
-                className="btn btn-sm"
                 style={{
-                  background: pc.canAdd ? 'var(--accent2)' : 'var(--card2)',
+                  height: 36, padding: '0 12px', borderRadius: 10, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', flexShrink: 0,
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: pc.canAdd ? '#1A336A' : 'var(--card2)',
                   color: pc.canAdd ? '#fff' : 'var(--gray)',
-                  border: 'none', fontSize: 11, fontWeight: 700,
-                  opacity: pc.canAdd ? 1 : 0.5,
+                  border: pc.canAdd ? 'none' : '1px solid var(--border)',
                   cursor: pc.canAdd ? 'pointer' : 'not-allowed',
                 }}
               >
-                ➕ Add Points
+                <PfIcon name="plus" size={15} stroke={2.4} /> Add Points
               </button>
             </div>
 
             {/* last entry */}
             {pc.lastEntry ? (
               <div
+                className="pf-head"
+                role="button" tabIndex={0} aria-expanded={isOpen}
                 onClick={() => setExpandedProgram(isOpen ? null : pc.program.id)}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: '1px solid var(--border)', cursor: 'pointer' }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedProgram(isOpen ? null : pc.program.id); } }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 0 2px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}
               >
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700 }}>{pc.lastEntry.challengeName}</div>
-                  <div style={{ fontSize: 10, color: 'var(--gray)' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: '#182238', overflowWrap: 'anywhere' }}>{pc.lastEntry.challengeName}</div>
+                  <div style={{ fontSize: 12, color: '#64748B', marginTop: 1, overflowWrap: 'anywhere' }}>
                     {(pc.lastEntry.date || '').slice(0, 10)} · by {pc.lastEntry.by}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <b style={{ color: 'var(--accent2)' }}>+{pc.lastEntry.points}</b>
-                  <span style={{ fontSize: 12, color: 'var(--gray)', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform .15s' }}>›</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  <b style={{ color: '#1A336A', fontSize: 15 }}>+{pc.lastEntry.points}</b>
+                  <span style={{ display: 'flex', color: '#94A3B8', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform .15s' }}>
+                    <PfIcon name="chevronRight" size={18} />
+                  </span>
                 </div>
               </div>
             ) : (
-              <div style={{ fontSize: 11, color: 'var(--gray)', padding: '8px 0', borderTop: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 12.5, color: 'var(--gray)', padding: '10px 0 2px', borderTop: '1px solid var(--border)' }}>
                 No entries yet — due now.
               </div>
             )}
 
             {!pc.due && (
-              <div style={{ fontSize: 10, color: 'var(--gray)', marginTop: 2 }}>
-                Next entry opens {pc.dueDate.toISOString().slice(0, 10)}
+              <div style={{ fontSize: 12, color: '#64748B', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <PfIcon name="calendar" size={13} /> Next entry opens {pc.dueDate.toISOString().slice(0, 10)}
               </div>
             )}
 
             {/* history list — tap last entry to expand */}
             {isOpen && pc.history.length > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gray)', marginBottom: 6 }}>PREVIOUS ENTRIES</div>
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#1A336A', marginBottom: 4 }}>Previous entries</div>
                 {pc.history.map(h => (
-                  <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 11, borderTop: '1px solid var(--border)' }}>
-                    <span>{h.challengeName} <span style={{ color: 'var(--gray)' }}>· by {h.by}</span></span>
-                    <span style={{ display: 'flex', gap: 8 }}>
-                      <span style={{ color: 'var(--gray)' }}>{(h.date || '').slice(0, 10)}</span>
-                      <b style={{ color: 'var(--accent2)' }}>+{h.points}</b>
+                  <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '8px 0', fontSize: 12.5, borderTop: '1px solid var(--border)' }}>
+                    <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{h.challengeName} <span style={{ color: 'var(--gray)' }}>· by {h.by}</span></span>
+                    <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                      <span style={{ color: 'var(--gray)', fontSize: 12 }}>{(h.date || '').slice(0, 10)}</span>
+                      <b style={{ color: '#1A336A' }}>+{h.points}</b>
                     </span>
                   </div>
                 ))}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import PanelWindow from '../components/PanelWindow';
+import { pfActionBtn as pfActionBtnLocal, PfIcon, PfBadge, PfEmpty, PfPageHeader, PF_CSS, pfCardStyle, pfCtl, pfOutlineBtn, pfPrimaryBtn, pfIconBtn, pfDangerIconBtn } from './perfUi';
 
 function todayIso() { return new Date().toISOString().slice(0, 10); }
 
@@ -52,46 +53,48 @@ export default function ProgramListPage() {
   };
 
   return (
-    <div className="page active" style={{ paddingBottom: 90 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <div className="section-title" style={{ marginBottom: 0 }}>🏆 Programs</div>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate('/admin/performance')}>Back</button>
-      </div>
+    <div className="page active" style={{ paddingBottom: 'calc(90px + env(safe-area-inset-bottom, 0px))' }}>
+      <style>{PF_CSS}</style>
+      <PfPageHeader icon="trophy" title="Programs">
+        <button type="button" className="pf-btn" style={pfOutlineBtn} onClick={() => navigate('/admin/performance')}>
+          <PfIcon name="arrowLeft" size={15} /> Back
+        </button>
+      </PfPageHeader>
 
-      {loading && <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 20 }}>Loading…</div>}
+      {loading && <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 20, fontSize: 13 }}>Loading…</div>}
 
       {!loading && ordered.map(p => {
         const count = challenges.filter(c => c.program_id === p.id).length;
         const completedBadge = isCompleted(p);
+        const metaItem = { display: 'inline-flex', alignItems: 'center', gap: 4, minWidth: 0 };
         return (
           <div
             key={p.id}
-            className="card"
-            style={{ padding: 12, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', opacity: completedBadge ? 0.65 : 1 }}
+            className="pf-card"
+            role="button" tabIndex={0}
+            style={{ ...pfCardStyle, padding: '12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: completedBadge ? 'var(--card2)' : 'var(--card)' }}
             onClick={() => setOpenProgram(p)}
+            onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setOpenProgram(p); } }}
           >
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                {p.name}
-                {completedBadge && (
-                  <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--gray)', background: 'var(--card2)', borderRadius: 6, padding: '2px 6px' }}>COMPLETED</span>
-                )}
-                {!completedBadge && (
-                  <span style={{ fontSize: 9, fontWeight: 700, color: '#1a9e4c', background: '#1a9e4c22', borderRadius: 6, padding: '2px 6px' }}>IN PROGRESS</span>
-                )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px' }}>
+                <span style={{ fontWeight: 700, fontSize: 14.5, lineHeight: 1.25, color: completedBadge ? '#475569' : '#182238', overflowWrap: 'anywhere' }}>{p.name}</span>
+                {completedBadge
+                  ? <PfBadge tone="neutral" icon="check">Completed</PfBadge>
+                  : <PfBadge tone="success" icon="clock">In progress</PfBadge>}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 2 }}>
-                {p.sport} · {count} challenge{count !== 1 ? 's' : ''} · {p.frequency}
-                {p.to_date ? ` · ends ${p.to_date}` : ''}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', fontSize: 12, color: '#64748B', marginTop: 6 }}>
+                <span style={metaItem}><PfIcon name="layers" size={13} /> {p.sport}</span>
+                <span style={metaItem}><PfIcon name="clipboardList" size={13} /> {count} challenge{count !== 1 ? 's' : ''}</span>
+                <span style={{ ...metaItem, textTransform: 'capitalize' }}><PfIcon name="clock" size={13} /> {p.frequency}</span>
+                {p.to_date && <span style={metaItem}><PfIcon name="calendar" size={13} /> Ends {p.to_date}</span>}
               </div>
             </div>
-            <span style={{ fontSize: 18, color: 'var(--gray)' }}>›</span>
+            <span style={{ display: 'flex', color: '#94A3B8', flexShrink: 0 }}><PfIcon name="chevronRight" size={20} /></span>
           </div>
         );
       })}
-      {!loading && ordered.length === 0 && (
-        <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30, fontSize: 13 }}>No programs created yet.</div>
-      )}
+      {!loading && ordered.length === 0 && <PfEmpty icon="clipboardList">No programs created yet.</PfEmpty>}
 
       {openProgram && (
         <ProgramDetailPanel
@@ -154,63 +157,84 @@ function ProgramDetailPanel({ program, challenges, academyId, userId, onClose, o
   return (
     <PanelWindow onClose={onClose}>
       <div className="modal" style={{ width: '100%', maxWidth: '100%', height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 0, margin: 0 }}>
-        <div className="modal-title">
-          <span>{program.name}</span>
-          <button className="modal-close" onClick={onClose}>×</button>
+        <style>{PF_CSS}</style>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(91,124,196,.12)', color: '#1A336A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <PfIcon name="clipboardList" size={18} />
+            </span>
+            <span style={{ fontWeight: 700, fontSize: 17, color: '#182238', lineHeight: 1.2, overflowWrap: 'anywhere' }}>{program.name}</span>
+          </div>
+          <button type="button" className="pf-iconbtn" onClick={onClose} aria-label="Close"
+            style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--card2)', border: '1px solid var(--border)', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}>
+            <PfIcon name="x" size={16} />
+          </button>
         </div>
 
-        <div style={{ overflowY: 'auto', flex: 1, padding: '0 2px' }}>
-          <div className="card" style={{ padding: 12, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: 12, color: 'var(--gray)' }}>
-              {program.sport} · {program.frequency}
+        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, padding: '0 2px calc(8px + env(safe-area-inset-bottom, 0px))' }}>
+          <div style={{ ...pfCardStyle, padding: 12, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+            <div style={{ fontSize: 12.5, color: '#475569', lineHeight: 1.5, minWidth: 0, overflowWrap: 'anywhere' }}>
+              <span style={{ textTransform: 'capitalize' }}>{program.sport} · {program.frequency}</span>
               {program.from_date ? ` · ${program.from_date} → ${program.to_date || 'open'}` : ''}
               {' · '}{program.attendance_weight ?? 50}/{100 - (program.attendance_weight ?? 50)} split
             </div>
-            <button className="btn btn-sm" style={{ background: '#ef444422', color: '#ef4444', border: '1px solid #ef444444', fontSize: 11 }} onClick={onDeleteProgram}>
-              🗑 Delete
+            <button type="button" className="pf-btn" style={{ ...pfActionBtnLocal, background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }} onClick={onDeleteProgram}>
+              <PfIcon name="trash" size={15} /> Delete
             </button>
           </div>
 
           {challenges.map(c => (
-            <div key={c.id} style={{ background: 'var(--card2)', borderRadius: 7, padding: 10, marginBottom: 8 }}>
+            <div key={c.id} style={{ ...pfCardStyle, padding: 10, marginBottom: 8 }}>
               {editingChallenge === c.id ? (
                 <div>
-                  <input className="form-input" style={{ width: '100%', fontSize: 12, marginBottom: 5 }} value={editName} onChange={e => setEditName(e.target.value)} />
-                  <input className="form-input" type="number" style={{ width: '100%', fontSize: 12, marginBottom: 6 }} value={editPoints} onChange={e => setEditPoints(e.target.value)} />
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn" style={{ flex: 1, fontSize: 11, background: 'var(--card)' }} onClick={() => setEditingChallenge(null)}>Cancel</button>
-                    <button className="btn btn-primary" style={{ flex: 1, fontSize: 11 }} disabled={busy} onClick={() => saveEditChallenge(c)}>Save</button>
+                  <input className="form-input pf-field" aria-label="Challenge name" style={{ ...pfCtl, marginBottom: 6 }} value={editName} onChange={e => setEditName(e.target.value)} />
+                  <input className="form-input pf-field" aria-label="Total points" type="number" style={{ ...pfCtl, marginBottom: 8 }} value={editPoints} onChange={e => setEditPoints(e.target.value)} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" className="pf-btn" style={{ ...pfOutlineBtn, flex: 1, height: 40 }} onClick={() => setEditingChallenge(null)}>Cancel</button>
+                    <button type="button" className="pf-btn" style={{ ...pfPrimaryBtn, flex: 1, height: 40 }} disabled={busy} onClick={() => saveEditChallenge(c)}>
+                      <PfIcon name="check" size={15} /> Save
+                    </button>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 700 }}>{c.name}</div>
-                    <div style={{ fontSize: 10, color: 'var(--gray)' }}>{c.total_points} pts</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#182238', overflowWrap: 'anywhere' }}>{c.name}</div>
+                    <div style={{ fontSize: 12, color: '#64748B', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <PfIcon name="award" size={13} /> {c.total_points} pts
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button className="btn btn-sm" style={{ fontSize: 10, padding: '4px 7px' }}
-                      onClick={() => { setEditingChallenge(c.id); setEditName(c.name); setEditPoints(String(c.total_points)); }}>✏️</button>
-                    <button className="btn btn-sm" style={{ fontSize: 10, padding: '4px 7px', background: '#ef444422', color: '#ef4444', border: '1px solid #ef444444' }}
-                      onClick={() => deleteChallenge(c)}>🗑</button>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <button type="button" className="pf-iconbtn" style={pfIconBtn} aria-label={`Edit ${c.name}`} title="Edit"
+                      onClick={() => { setEditingChallenge(c.id); setEditName(c.name); setEditPoints(String(c.total_points)); }}>
+                      <PfIcon name="pencil" size={16} />
+                    </button>
+                    <button type="button" className="pf-iconbtn" style={pfDangerIconBtn} aria-label={`Delete ${c.name}`} title="Delete"
+                      onClick={() => deleteChallenge(c)}>
+                      <PfIcon name="trash" size={16} />
+                    </button>
                   </div>
                 </div>
               )}
             </div>
           ))}
-          {challenges.length === 0 && <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 16, fontSize: 12 }}>No challenges yet.</div>}
+          {challenges.length === 0 && <PfEmpty icon="clipboardList">No challenges yet.</PfEmpty>}
 
           {addingChallenge ? (
-            <div style={{ marginTop: 6 }}>
-              <input className="form-input" style={{ width: '100%', fontSize: 12, marginBottom: 5 }} placeholder="Challenge name" value={challengeName} onChange={e => setChallengeName(e.target.value)} />
-              <input className="form-input" type="number" style={{ width: '100%', fontSize: 12, marginBottom: 6 }} placeholder="Total points" value={challengePoints} onChange={e => setChallengePoints(e.target.value)} />
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button className="btn" style={{ flex: 1, fontSize: 11, background: 'var(--card2)' }} onClick={() => setAddingChallenge(false)}>Cancel</button>
-                <button className="btn btn-primary" style={{ flex: 1, fontSize: 11 }} disabled={busy} onClick={addChallenge}>Add</button>
+            <div style={{ ...pfCardStyle, padding: 10, marginTop: 6 }}>
+              <input className="form-input pf-field" style={{ ...pfCtl, marginBottom: 6 }} placeholder="Challenge name" value={challengeName} onChange={e => setChallengeName(e.target.value)} />
+              <input className="form-input pf-field" type="number" style={{ ...pfCtl, marginBottom: 8 }} placeholder="Total points" value={challengePoints} onChange={e => setChallengePoints(e.target.value)} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" className="pf-btn" style={{ ...pfOutlineBtn, flex: 1, height: 40 }} onClick={() => setAddingChallenge(false)}>Cancel</button>
+                <button type="button" className="pf-btn" style={{ ...pfPrimaryBtn, flex: 1, height: 40 }} disabled={busy} onClick={addChallenge}>
+                  <PfIcon name="plus" size={15} stroke={2.4} /> Add
+                </button>
               </div>
             </div>
           ) : (
-            <button className="btn btn-outline btn-sm" style={{ width: '100%', fontSize: 11, marginTop: 4 }} onClick={() => setAddingChallenge(true)}>+ Add Challenge</button>
+            <button type="button" className="pf-btn" style={{ ...pfOutlineBtn, width: '100%', height: 42, marginTop: 4 }} onClick={() => setAddingChallenge(true)}>
+              <PfIcon name="plus" size={15} stroke={2.4} /> Add Challenge
+            </button>
           )}
         </div>
       </div>

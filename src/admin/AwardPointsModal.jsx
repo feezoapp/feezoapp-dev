@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import PanelWindow from '../components/PanelWindow';
 import { periodStartFor, missingPeriodsFor } from '../lib/scheduleUtils';
+import { PfIcon, PfLabel, PF_CSS, pfCardStyle, pfPrimaryBtn } from './perfUi';
 
 // Local calendar date, not .toISOString() — see scheduleUtils.js for why
 // UTC conversion silently shifts dates back a day in timezones ahead of UTC.
@@ -111,35 +112,54 @@ export default function AwardPointsModal({ row, academyId, userId, userName, pro
   return (
     <PanelWindow onClose={onClose}>
       <div className="modal" style={{ width: '100%', maxWidth: '100%', height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 0, margin: 0 }}>
-        <div className="modal-title">
-          <span>🏆 Award Points</span>
-          <button className="modal-close" onClick={onClose}>×</button>
+        <style>{PF_CSS}</style>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(91,124,196,.12)', color: '#1A336A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <PfIcon name="award" size={18} />
+            </span>
+            <span style={{ fontWeight: 700, fontSize: 17, color: '#182238', lineHeight: 1.2 }}>Award Points</span>
+          </div>
+          <button type="button" className="pf-iconbtn" onClick={onClose} aria-label="Close award points"
+            style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--card2)', border: '1px solid var(--border)', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}>
+            <PfIcon name="x" size={16} />
+          </button>
         </div>
 
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontWeight: 800, fontSize: 14 }}>{row.student.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--gray)' }}>{row.sport} · {row.batchLabel}</div>
+        {/* Student */}
+        <div style={{ ...pfCardStyle, padding: '10px 12px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <div aria-hidden="true" style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 15, flexShrink: 0 }}>
+            {(row.student.name || '?').charAt(0).toUpperCase()}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 14.5, color: '#182238', lineHeight: 1.25, overflowWrap: 'anywhere' }}>{row.student.name}</div>
+            <div style={{ fontSize: 12, color: '#64748B', marginTop: 1, overflowWrap: 'anywhere' }}>{row.sport} · {row.batchLabel}</div>
+          </div>
         </div>
 
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gray)', marginBottom: 5 }}>AWARDING FOR (or pick a missing date below)</div>
-          <input type="date" className="form-input" style={{ width: '100%', fontSize: 12, padding: '7px 8px' }}
+        {/* Date */}
+        <div style={{ marginBottom: 12, flexShrink: 0 }}>
+          <PfLabel htmlFor="ap-date" icon="calendar">Awarding for <span style={{ fontWeight: 400, color: 'var(--gray)' }}>(or pick a missing date below)</span></PfLabel>
+          <input id="ap-date" type="date" className="form-input pf-field" style={{ width: '100%', minWidth: 0, height: 40, fontSize: 14, padding: '0 10px', boxSizing: 'border-box', background: '#fff' }}
             value={date} max={todayIso()}
             onChange={e => setDate(e.target.value > todayIso() ? todayIso() : e.target.value)} />
         </div>
 
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <div style={{ overflowY: 'auto', overscrollBehavior: 'contain', flex: 1, minHeight: 0 }}>
           {visiblePrograms.map(p => {
             const progChallenges = visibleChallenges.filter(c => c.program_id === p.id);
             if (progChallenges.length === 0) return null;
             const period = periodStartFor(p.frequency, date);
             return (
-              <div key={p.id} style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent2)' }}>{p.name}</div>
-                <div style={{ fontSize: 10, color: 'var(--gray)', marginBottom: 6 }}>
-                  {periodLabelFor(p.frequency, period)}
+              <div key={p.id} style={{ ...pfCardStyle, padding: 12, marginBottom: 10 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#1A336A', overflowWrap: 'anywhere' }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: '#64748B', margin: '3px 0 10px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 6px' }}>
+                  <PfIcon name="calendar" size={13} />
+                  <span>{periodLabelFor(p.frequency, period)}</span>
                   {(p.frequency === 'weekly' || p.frequency === 'monthly') && (
-                    <> · Next: {periodLabelFor(p.frequency, nextPeriodStartFor(p.frequency, period))}</>
+                    <span>· Next: {periodLabelFor(p.frequency, nextPeriodStartFor(p.frequency, period))}</span>
                   )}
                 </div>
                 {(() => {
@@ -147,21 +167,23 @@ export default function AwardPointsModal({ row, academyId, userId, userName, pro
                   if (missing.length === 0) return null;
                   const shown = missing.slice(0, 10);
                   return (
-                    <div style={{ marginBottom: 10 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', marginBottom: 4 }}>
-                        MISSING ({missing.length}) — tap a date to fill it in
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#B91C1C', marginBottom: 6 }}>
+                        Missing ({missing.length}) — tap a date to fill it in
                       </div>
-                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                        {shown.map(m => (
-                          <button key={m} type="button" onClick={() => setDate(m)}
-                            className={`btn btn-sm ${date === m ? 'btn-primary' : 'btn-outline'}`}
-                            style={{ fontSize: 10, padding: '4px 8px' }}
-                          >
-                            {periodLabelFor(p.frequency, m)}
-                          </button>
-                        ))}
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {shown.map(m => {
+                          const on = date === m;
+                          return (
+                            <button key={m} type="button" className="pf-btn" aria-pressed={on} onClick={() => setDate(m)}
+                              style={{ minHeight: 32, padding: '4px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', background: on ? '#1A336A' : '#fff', color: on ? '#fff' : '#1A336A', border: `1px solid ${on ? '#1A336A' : 'var(--border)'}` }}
+                            >
+                              {periodLabelFor(p.frequency, m)}
+                            </button>
+                          );
+                        })}
                         {missing.length > shown.length && (
-                          <span style={{ fontSize: 10, color: 'var(--gray)', alignSelf: 'center' }}>
+                          <span style={{ fontSize: 12, color: 'var(--gray)', alignSelf: 'center' }}>
                             +{missing.length - shown.length} earlier
                           </span>
                         )}
@@ -170,11 +192,12 @@ export default function AwardPointsModal({ row, academyId, userId, userName, pro
                   );
                 })()}
                 {progChallenges.map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                    <div style={{ flex: 1, fontSize: 12 }}>{c.name} <span style={{ color: 'var(--gray)' }}>/ {c.total_points}</span></div>
+                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: '#182238', overflowWrap: 'anywhere' }}>{c.name} <span style={{ color: 'var(--gray)' }}>/ {c.total_points}</span></div>
                     <input
                       type="number" min={0} max={c.total_points}
-                      className="form-input" style={{ width: 70, fontSize: 12, padding: '6px 8px' }}
+                      aria-label={`Points for ${c.name}`}
+                      className="form-input pf-field" style={{ width: 76, height: 40, fontSize: 14, padding: '0 8px', textAlign: 'center', boxSizing: 'border-box', background: '#fff', flexShrink: 0 }}
                       placeholder="0"
                       value={values[c.id] ?? ''}
                       onChange={e => setVal(c.id, e.target.value, c.total_points)}
@@ -185,14 +208,15 @@ export default function AwardPointsModal({ row, academyId, userId, userName, pro
             );
           })}
           {visibleChallenges.length === 0 && (
-            <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 20, fontSize: 12 }}>
+            <div style={{ textAlign: 'center', color: 'var(--gray)', padding: '24px 20px', fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#9DB2DD' }}><PfIcon name="clipboardList" size={28} /></span>
               No programs/challenges set up for {row.sport} yet.
             </div>
           )}
         </div>
 
-        <button className="btn btn-primary" style={{ width: '100%', marginTop: 10 }} disabled={busy} onClick={saveAll}>
-          {busy ? 'Saving…' : 'Save Points'}
+        <button type="button" className="pf-btn" style={{ ...pfPrimaryBtn, width: '100%', height: 46, fontSize: 14, fontWeight: 700, marginTop: 10, flexShrink: 0 }} disabled={busy} onClick={saveAll}>
+          <PfIcon name="check" size={17} /> {busy ? 'Saving…' : 'Save Points'}
         </button>
       </div>
     </PanelWindow>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAcademyData } from '../context/AcademyDataContext';
 import { supabase } from '../lib/supabaseClient';
+import { PfIcon, PfLabel, PfSection, PfPageHeader, PF_CSS, pfCtl, pfOutlineBtn, pfPrimaryBtn } from './perfUi';
 
 const FREQUENCIES = [
   { key: 'daily', label: 'Daily' },
@@ -133,86 +134,118 @@ export default function AddProgramPage() {
     }
   };
 
+  const grid2 = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 };
+
   return (
-    <div className="page active" style={{ paddingBottom: 90 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <div className="section-title" style={{ marginBottom: 0 }}>+ Add Program</div>
-        <button className="btn btn-outline btn-sm" onClick={() => navigate('/admin/performance')}>Cancel</button>
-      </div>
+    <div className="page active" style={{ paddingBottom: 'calc(90px + env(safe-area-inset-bottom, 0px))' }}>
+      <style>{PF_CSS}</style>
+      <PfPageHeader icon="plus" title="Add Program">
+        <button type="button" className="pf-btn" style={pfOutlineBtn} onClick={() => navigate('/admin/performance')}>
+          <PfIcon name="x" size={15} /> Cancel
+        </button>
+      </PfPageHeader>
 
-      {/* sport + batch + name — one row */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-        <select className="form-select" style={{ flex: '1 1 90px', fontSize: 12 }} value={sport} onChange={e => setSport(e.target.value)}>
-          {visibleSports.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
-        </select>
-        <select className="form-select" style={{ flex: '1 1 100px', fontSize: 12 }} value={batch} onChange={e => setBatch(e.target.value)}>
-          <option value="">All batches</option>
-          {batchOptions.map(b => <option key={b.id} value={b.batchLabel}>{b.batchLabel}</option>)}
-        </select>
-        <input className="form-input" style={{ flex: '2 1 140px', fontSize: 12 }} placeholder="Program name (e.g. Level 1 Basics)"
-          value={name} onChange={e => setName(e.target.value)} />
-      </div>
-
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gray)', marginBottom: 5 }}>PROGRAM DATES</div>
-      <div style={{ marginBottom: 10 }}>
-        <select className="form-select" style={{ width: '100%', fontSize: 12 }} value={frequency} onChange={e => setFrequency(e.target.value)}>
-          {FREQUENCIES.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
-        </select>
-      </div>
-
-      {frequency === 'custom' && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gray)', marginBottom: 5 }}>ENTRY DAYS</div>
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-            {WEEKDAYS.map(d => (
-              <button key={d.v} type="button"
-                onClick={() => toggleDay(d.v)}
-                className={`btn btn-sm ${customDays.includes(d.v) ? 'btn-primary' : 'btn-outline'}`}
-                style={{ fontSize: 11, padding: '5px 9px' }}
-              >{d.l}</button>
-            ))}
+      {/* sport + batch + name */}
+      <PfSection icon="clipboardList" title="Program details">
+        <div style={{ ...grid2, marginBottom: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <PfLabel htmlFor="ap-sport" icon="trophy">Sport</PfLabel>
+            <select id="ap-sport" className="form-select pf-field" style={pfCtl} value={sport} onChange={e => setSport(e.target.value)}>
+              {visibleSports.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+            </select>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <PfLabel htmlFor="ap-batch" icon="layers">Batch</PfLabel>
+            <select id="ap-batch" className="form-select pf-field" style={pfCtl} value={batch} onChange={e => setBatch(e.target.value)}>
+              <option value="">All batches</option>
+              {batchOptions.map(b => <option key={b.id} value={b.batchLabel}>{b.batchLabel}</option>)}
+            </select>
           </div>
         </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, alignItems: 'center' }}>
-        <input type="date" className="form-input" style={{ flex: 1, fontSize: 11, padding: '7px 6px' }} value={fromDate} onChange={e => setFromDate(e.target.value)} />
-        <span style={{ fontSize: 11, color: 'var(--gray)' }}>–</span>
-        <input type="date" className="form-input" style={{ flex: 1, fontSize: 11, padding: '7px 6px' }} value={toDate} onChange={e => setToDate(e.target.value)} />
-      </div>
-
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gray)', marginBottom: 5 }}>SCORE SPLIT (%)</div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: 'var(--gray)', marginBottom: 3 }}>Attendance</div>
-          <input type="number" min={0} max={100} className="form-input" style={{ width: '100%', fontSize: 12, padding: '7px 8px' }}
-            value={attendanceInput} onChange={e => setAttendanceInput(e.target.value)} onBlur={commitAttendance} />
+        <div style={{ minWidth: 0 }}>
+          <PfLabel htmlFor="ap-name" icon="target">Program name</PfLabel>
+          <input id="ap-name" className="form-input pf-field" style={pfCtl} placeholder="Program name (e.g. Level 1 Basics)"
+            value={name} onChange={e => setName(e.target.value)} />
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: 'var(--gray)', marginBottom: 3 }}>Program</div>
-          <input type="number" min={0} max={100} className="form-input" style={{ width: '100%', fontSize: 12, padding: '7px 8px' }}
-            value={programInput} onChange={e => setProgramInput(e.target.value)} onBlur={commitProgram} />
-        </div>
-      </div>
+      </PfSection>
 
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gray)', marginBottom: 5 }}>CHALLENGES</div>
-      {challengeList.map((c, i) => (
-        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--card2)', borderRadius: 7, padding: '8px 10px', marginBottom: 6 }}>
-          <div style={{ fontSize: 12 }}>{c.name} <span style={{ color: 'var(--gray)' }}>· {c.points} pts</span></div>
-          <button onClick={() => removeChallengeRow(i)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 13, cursor: 'pointer' }}>✕</button>
+      <PfSection icon="calendar" title="Program dates">
+        <div style={{ marginBottom: 10 }}>
+          <PfLabel htmlFor="ap-freq" icon="clock">Entry frequency</PfLabel>
+          <select id="ap-freq" className="form-select pf-field" style={pfCtl} value={frequency} onChange={e => setFrequency(e.target.value)}>
+            {FREQUENCIES.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+          </select>
         </div>
-      ))}
-      {challengeList.length === 0 && <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 8 }}>No challenges added yet.</div>}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-        <input className="form-input" style={{ flex: 2, fontSize: 12 }} placeholder="Challenge name" value={chName} onChange={e => setChName(e.target.value)} />
-        <input type="number" className="form-input" style={{ flex: 1, fontSize: 12 }} placeholder="Points" value={chPoints} onChange={e => setChPoints(e.target.value)} />
-        <button className="btn btn-outline btn-sm" onClick={addChallengeRow}>+</button>
-      </div>
 
-      <button className="btn btn-primary" style={{ width: '100%' }}
+        {frequency === 'custom' && (
+          <div style={{ marginBottom: 12 }}>
+            <PfLabel icon="calendarCheck">Entry days</PfLabel>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {WEEKDAYS.map(d => {
+                const on = customDays.includes(d.v);
+                return (
+                  <button key={d.v} type="button" className="pf-btn" aria-pressed={on}
+                    onClick={() => toggleDay(d.v)}
+                    style={{ height: 36, minWidth: 44, padding: '0 10px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', background: on ? '#1A336A' : '#fff', color: on ? '#fff' : '#1A336A', border: `1px solid ${on ? '#1A336A' : 'var(--border)'}` }}
+                  >{d.l}</button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div style={grid2}>
+          <div style={{ minWidth: 0 }}>
+            <PfLabel htmlFor="ap-from">Start date</PfLabel>
+            <input id="ap-from" type="date" className="form-input pf-field" style={pfCtl} value={fromDate} onChange={e => setFromDate(e.target.value)} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <PfLabel htmlFor="ap-to">End date</PfLabel>
+            <input id="ap-to" type="date" className="form-input pf-field" style={pfCtl} value={toDate} onChange={e => setToDate(e.target.value)} />
+          </div>
+        </div>
+      </PfSection>
+
+      <PfSection icon="award" title="Score split (%)">
+        <div style={grid2}>
+          <div style={{ minWidth: 0 }}>
+            <PfLabel htmlFor="ap-att">Attendance</PfLabel>
+            <input id="ap-att" type="number" min={0} max={100} className="form-input pf-field" style={pfCtl}
+              value={attendanceInput} onChange={e => setAttendanceInput(e.target.value)} onBlur={commitAttendance} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <PfLabel htmlFor="ap-prog">Program</PfLabel>
+            <input id="ap-prog" type="number" min={0} max={100} className="form-input pf-field" style={pfCtl}
+              value={programInput} onChange={e => setProgramInput(e.target.value)} onBlur={commitProgram} />
+          </div>
+        </div>
+      </PfSection>
+
+      <PfSection icon="clipboardList" title="Challenges">
+        {challengeList.map((c, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 10, padding: '6px 6px 6px 10px', marginBottom: 6 }}>
+            <div style={{ fontSize: 13, color: '#182238', minWidth: 0, overflowWrap: 'anywhere' }}>{c.name} <span style={{ color: '#64748B' }}>· {c.points} pts</span></div>
+            <button type="button" className="pf-iconbtn" onClick={() => removeChallengeRow(i)} aria-label={`Remove ${c.name}`} title="Remove"
+              style={{ width: 32, height: 32, borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0 }}>
+              <PfIcon name="x" size={14} />
+            </button>
+          </div>
+        ))}
+        {challengeList.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--gray)', marginBottom: 8 }}>No challenges added yet.</div>}
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <input className="form-input pf-field" aria-label="Challenge name" style={{ ...pfCtl, flex: 2 }} placeholder="Challenge name" value={chName} onChange={e => setChName(e.target.value)} />
+          <input type="number" className="form-input pf-field" aria-label="Challenge points" style={{ ...pfCtl, flex: 1 }} placeholder="Points" value={chPoints} onChange={e => setChPoints(e.target.value)} />
+          <button type="button" className="pf-btn" aria-label="Add challenge" title="Add challenge" onClick={addChallengeRow}
+            style={{ width: 40, height: 40, borderRadius: 10, background: '#1A336A', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0 }}>
+            <PfIcon name="plus" size={18} stroke={2.4} />
+          </button>
+        </div>
+      </PfSection>
+
+      <button type="button" className="pf-btn" style={{ ...pfPrimaryBtn, width: '100%', height: 46, fontSize: 14, fontWeight: 700, marginTop: 4 }}
         disabled={busy}
         onClick={save}>
-        {busy ? 'Saving…' : 'Save Program'}
+        <PfIcon name="save" size={17} /> {busy ? 'Saving…' : 'Save Program'}
       </button>
     </div>
   );

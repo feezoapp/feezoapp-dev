@@ -7,6 +7,7 @@ import AwardPointsModal from './AwardPointsModal';
 import StudentChartsModal from './StudentChartsModal';
 import StudentHistoryModal from './StudentHistoryModal';
 import FeatureGate from './FeatureGate';
+import { PfIcon, PF_CSS, pfActionBtn, pfFilterBtn, pfRadioRow, pfRadioInput, PfTruncLabel } from './perfUi';
 
 const PRESENT_STATUS = 'P'; // adjust here if attendance uses a different code for "present"
 
@@ -47,52 +48,6 @@ function countPeriods(program, todayIsoStr) {
   return Math.round((end - start) / (24 * 60 * 60 * 1000)) + 1;
 }
 
-
-// ── Presentation-only helpers (icons + styles). No logic lives here. ──
-const PF_ICONS = {
-  trophy: <><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></>,
-  search: <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></>,
-  x: <path d="M18 6 6 18M6 6l12 12" />,
-  funnel: <path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z" />,
-  list: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />,
-  plus: <path d="M5 12h14M12 5v14" />,
-  calendarCheck: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /><path d="m9 16 2 2 4-4" /></>,
-  award: <><circle cx="12" cy="8" r="6" /><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" /></>,
-  chevronDown: <path d="m6 9 6 6 6-6" />,
-  chevronUp: <path d="m18 15-6-6-6 6" />,
-  chevronRight: <path d="m9 6 6 6-6 6" />,
-  clipboardList: <><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01" /></>,
-};
-function PfIcon({ name, size = 16, stroke = 2 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke}
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
-      {PF_ICONS[name]}
-    </svg>
-  );
-}
-
-const PF_CSS = `
-.pf-btn,.pf-card,.pf-head,.pf-chart,.pf-iconbtn{transition:transform .12s ease,border-color .15s ease,background-color .15s ease,box-shadow .15s ease}
-.pf-btn:active:not(:disabled),.pf-chart:active{transform:scale(.96)}
-.pf-card:active{transform:scale(.995)}
-@media (hover:hover){.pf-card:hover{border-color:#B9C7E6;box-shadow:0 2px 8px rgba(16,32,64,.07)}}
-.pf-btn:focus-visible,.pf-card:focus-visible,.pf-head:focus-visible,.pf-chart:focus-visible,.pf-iconbtn:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
-@keyframes pf-fade{from{opacity:0}to{opacity:1}}
-@keyframes pf-pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.pf-overlay{animation:pf-fade .15s ease}
-.pf-popup{animation:pf-pop .16s ease}
-@media (prefers-reduced-motion:reduce){.pf-btn,.pf-card,.pf-head,.pf-chart,.pf-overlay,.pf-popup{animation:none !important;transition:none !important}}
-`;
-
-const pfActionBtn = { height: 36, padding: '0 12px', borderRadius: 10, fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' };
-const pfFilterBtn = { flex: '1 1 45%', minWidth: 0, height: 40, padding: '0 10px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, cursor: 'pointer', fontFamily: 'inherit', background: '#fff', color: '#1A336A', border: '1px solid var(--border)', boxSizing: 'border-box' };
-const pfRadioRow = { display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, minHeight: 42, padding: '8px 10px', borderRadius: 10, cursor: 'pointer', margin: '2px 0', color: '#333' };
-const pfRadioInput = { width: 18, height: 18, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' };
-
-function PfTruncLabel({ children }) {
-  return <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{children}</span>;
-}
 
 function PerformancePageContent() {
   const { academyId, isAdmin, user, appUser } = useAuth();
