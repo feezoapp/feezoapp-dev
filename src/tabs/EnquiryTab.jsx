@@ -46,21 +46,26 @@ function relTime(iso) {
   return d.toLocaleDateString();
 }
 
-// Same centered popup used by StudentsTab's / AttendanceTab's / HomeTab's /
-// FeesTab's Sport/Batch/Sort filters — a dark overlay + a card of radio
-// rows, closing itself on selection.
+// Centered popup — same look as FeesTab's Month / Year / Sport / Batch / Status
+// pickers. Props are unchanged.
 function FilterPopup({ title, onClose, children }) {
   return (
     <div
+      className="eq-overlay"
       onClick={onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      role="dialog" aria-modal="true" aria-label={title}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(10,18,35,.5)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', borderRadius: 12, padding: 14, width: '85%', maxWidth: 320, maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 8px 30px rgba(0,0,0,.4)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 800 }}>{title}</div>
-          <button onClick={onClose} aria-label="Close filter" className="eq-iconbtn" style={{ background: 'none', border: 'none', color: 'var(--gray)', cursor: 'pointer', display: 'flex', padding: 4 }}><SheetIcon name="x" size={18} /></button>
+      <div className="eq-popup" onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, padding: '14px 12px 10px', width: '100%', maxWidth: 320, maxHeight: 'min(68vh, 480px)', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 32px rgba(10,18,35,.24)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: 6, padding: '0 4px', flexShrink: 0 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: '#1A336A', textAlign: 'center' }}>{title}</div>
+          <button type="button" className="eq-iconbtn" onClick={onClose} aria-label="Close" style={{ position: 'absolute', right: 0, width: 28, height: 28, borderRadius: '50%', background: '#F1F3F8', border: 'none', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+            <SheetIcon name="x" size={15} />
+          </button>
         </div>
-        {children}
+        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -68,11 +73,25 @@ function FilterPopup({ title, onClose, children }) {
 
 function RadioRow({ name, checked, onChange, label }) {
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-      <input type="radio" name={name} checked={checked} onChange={onChange} />
+    <label style={{
+      display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, minHeight: 42, padding: '8px 10px', borderRadius: 10,
+      cursor: 'pointer', margin: '2px 0', background: checked ? 'rgba(91,124,196,.12)' : 'transparent',
+      color: checked ? '#1A336A' : '#333', fontWeight: checked ? 600 : 500, transition: 'background .15s ease, color .15s ease',
+    }}>
+      <input type="radio" name={name} checked={checked} onChange={onChange} style={{ width: 18, height: 18, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' }} />
       {label}
     </label>
   );
+}
+
+// Equal-size filter chip — highlighted light blue when a filter is applied (same as FeesTab).
+function chipStyle(on) {
+  return {
+    flex: '1 1 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0,
+    height: 36, fontSize: 12, fontWeight: 600, padding: '0 8px', borderRadius: 10, fontFamily: 'inherit',
+    border: `1px solid ${on ? '#5B7CC4' : 'var(--border)'}`,
+    background: on ? 'rgba(91,124,196,.10)' : 'var(--card2)', color: '#1A336A', cursor: 'pointer',
+  };
 }
 
 // Lucide-style outline icons (inline so no extra dependency is needed).
@@ -143,6 +162,15 @@ const EQ_CSS = `
 .eq-fab{transition:transform .12s ease,box-shadow .15s ease,opacity .15s ease}
 .eq-fab:active:not(:disabled){transform:scale(.96)}
 .eq-seg{transition:background-color .15s ease,color .15s ease}
+.eq-chip{transition:border-color .15s ease,background-color .15s ease,transform .12s ease}
+.eq-chip:hover{border-color:#9DB2DD}
+.eq-chip:active{transform:scale(.97)}
+.eq-chip:focus-visible,.eq-filter-head:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+@keyframes eq-fade{from{opacity:0}to{opacity:1}}
+@keyframes eq-pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.eq-overlay{animation:eq-fade .15s ease}
+.eq-popup,.eq-panel{animation:eq-pop .16s ease}
+@media (prefers-reduced-motion:reduce){.eq-chip,.eq-overlay,.eq-popup,.eq-panel{animation:none !important;transition:none !important}}
 `;
 
 function Field({ label, children }) {
@@ -182,7 +210,6 @@ export default function EnquiryTab({ isActive = true }) {
   const [filterConv, setFilterConv] = useState('');
   const [filterSport, setFilterSport] = useState('');
   const [filterStaff, setFilterStaff] = useState('');
-  const [filterReminder, setFilterReminder] = useState('');
   const [view, setView] = useState('active'); // 'active' | 'archive' (admin only)
   const [popup, setPopup] = useState(null); // 'conv' | 'sport' | 'staff' | null
   const [panelOpen, setPanelOpen] = useState(false); // filter panel: collapsed by default, matching AttendanceTab
@@ -274,7 +301,7 @@ export default function EnquiryTab({ isActive = true }) {
 
   const staffScopedSports = useMemo(() => visibleSports.map(s => s.name), [visibleSports]);
 
-  const activeFilterCount = [filterConv, filterSport, filterReminder, isAdmin ? filterStaff : ''].filter(Boolean).length;
+  const activeFilterCount = [filterConv, filterSport, isAdmin ? filterStaff : ''].filter(Boolean).length;
 
   const filtered = useMemo(() => {
     let list = enquiries.filter(q => (view === 'archive' ? q.archived : !q.archived));
@@ -287,7 +314,6 @@ export default function EnquiryTab({ isActive = true }) {
     if (s) list = list.filter(q => (q.name || '').toLowerCase().includes(s) || (q.phone || '').toLowerCase().includes(s));
     if (filterConv) list = list.filter(q => q.conversion_ratio === filterConv);
     if (filterSport) list = list.filter(q => (q.sport || '') === filterSport);
-    if (filterReminder) list = list.filter(q => q.reminder_date === filterReminder);
     if (isAdmin && filterStaff) {
       list = filterStaff === '__UNASSIGNED__'
         ? list.filter(q => !q.assigned_to)
@@ -301,7 +327,7 @@ export default function EnquiryTab({ isActive = true }) {
       if (ar && br) return ar.localeCompare(br);
       return 0;
     });
-  }, [enquiries, view, isAdmin, appUser, createdByName, search, filterConv, filterSport, filterReminder, filterStaff]);
+  }, [enquiries, view, isAdmin, appUser, createdByName, search, filterConv, filterSport, filterStaff]);
 
   // ---- Add ----
   const openAdd = () => {
@@ -480,39 +506,55 @@ export default function EnquiryTab({ isActive = true }) {
         </div>
       )}
 
-      {/* Filter panel — collapsible card, matching AttendanceTab's date/filter panel */}
-      <div className="card" style={{ padding: 10, marginBottom: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-          onClick={() => setPanelOpen(p => !p)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 13.5 }}>
-              <span style={{ display: 'flex', color: 'var(--accent2)' }}><SheetIcon name="funnel" size={15} /></span> Filters
-            </span>
+      {/* Filter card — same look as FeesTab's collapsible filters card */}
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 10px', marginBottom: 6, boxShadow: '0 1px 2px rgba(16,32,64,.05)', flexShrink: 0 }}>
+        <div
+          className="eq-filter-head"
+          role="button" tabIndex={0} aria-expanded={panelOpen}
+          onClick={() => setPanelOpen(p => !p)}
+          onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setPanelOpen(p => !p); } }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'pointer', minHeight: 36 }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <span style={{ display: 'flex', color: '#1A336A' }} aria-hidden="true"><SheetIcon name="funnel" size={18} /></span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: '#182238', whiteSpace: 'nowrap' }}>Filters</span>
             {activeFilterCount > 0 && (
-              <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 12, background: 'var(--accent2)', color: '#fff' }}>{activeFilterCount}</span>
+              <span style={{ fontSize: 11.5, fontWeight: 700, padding: '1px 8px', borderRadius: 8, background: 'rgba(91,124,196,.12)', border: '1px solid rgba(91,124,196,.28)', color: '#1A336A' }}>{activeFilterCount}</span>
+            )}
+            {activeFilterCount > 0 && (
+              <span style={{ fontSize: 11.5, color: 'var(--gray)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                {[filterConv, filterSport, isAdmin ? (filterStaff === '__UNASSIGNED__' ? '— Unassigned —' : (staffList.find(u => u.id === filterStaff)?.name || staffList.find(u => u.id === filterStaff)?.id)) : ''].filter(Boolean).join(' · ')}
+              </span>
             )}
           </div>
-          <button className="arrow-btn eq-iconbtn" style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+          <button type="button" className="eq-chip"
+            style={{ width: 28, height: 28, borderRadius: '50%', border: 'none', background: 'var(--card2)', color: '#1A336A', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, flexShrink: 0 }}
             aria-label={panelOpen ? 'Collapse filters' : 'Expand filters'} aria-expanded={panelOpen}
             onClick={(e) => { e.stopPropagation(); setPanelOpen(p => !p); }}>
-            <SheetIcon name={panelOpen ? 'chevronUp' : 'chevronDown'} size={15} />
+            <SheetIcon name={panelOpen ? 'chevronUp' : 'chevronDown'} size={16} />
           </button>
         </div>
 
         {panelOpen && (
-          <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <button className="btn btn-outline btn-sm" style={{ fontSize: 12, padding: '7px 9px', minHeight: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('conv')}>
-              {CONVERSION_OPTIONS.find(o => o.value === filterConv)?.label || 'All Conversion'}
-            </button>
-            <button className="btn btn-outline btn-sm" style={{ fontSize: 12, padding: '7px 9px', minHeight: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('sport')}>
-              {filterSport || 'All Sports'}
-            </button>
-            {isAdmin && (
-              <button className="btn btn-outline btn-sm" style={{ fontSize: 12, padding: '7px 9px', minHeight: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setPopup('staff')}>
-                {filterStaff === '__UNASSIGNED__' ? '— Unassigned —' : (staffList.find(u => u.id === filterStaff)?.name || staffList.find(u => u.id === filterStaff)?.id) || 'Assigned to: All'}
+          <div className="eq-panel" style={{ marginTop: 8, marginBottom: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button type="button" className="eq-chip" style={chipStyle(!!filterConv)} onClick={() => setPopup('conv')} aria-haspopup="dialog" aria-label="Filter by conversion">
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{CONVERSION_OPTIONS.find(o => o.value === filterConv)?.label || 'All Conversion'}</span>
+                <SheetIcon name="chevronDown" size={13} />
               </button>
+              <button type="button" className="eq-chip" style={chipStyle(!!filterSport)} onClick={() => setPopup('sport')} aria-haspopup="dialog" aria-label="Filter by sport">
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filterSport || 'All Sports'}</span>
+                <SheetIcon name="chevronDown" size={13} />
+              </button>
+            </div>
+            {isAdmin && (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button type="button" className="eq-chip" style={chipStyle(!!filterStaff)} onClick={() => setPopup('staff')} aria-haspopup="dialog" aria-label="Filter by assigned staff">
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(filterStaff === '__UNASSIGNED__' ? '— Unassigned —' : (staffList.find(u => u.id === filterStaff)?.name || staffList.find(u => u.id === filterStaff)?.id)) || 'Assigned to: All'}</span>
+                  <SheetIcon name="chevronDown" size={13} />
+                </button>
+              </div>
             )}
-            <input type="date" className="form-input" aria-label="Filter by reminder date" style={{ fontSize: 12, padding: '7px 9px', minHeight: 36 }} value={filterReminder} onChange={e => setFilterReminder(e.target.value)} />
           </div>
         )}
       </div>
