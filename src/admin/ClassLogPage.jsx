@@ -52,24 +52,24 @@ const MIN_OPTS = Array.from({ length: 12 }, (_, i) => pad(i * 5));
 // A 3-part 12-hour time picker (hour / minute / AM-PM) that stores its value
 // as a plain 24h "HH:MM" string, so the rest of the app (duration calc,
 // Supabase columns) doesn't need to change.
-function TimePicker12({ value, onChange, accentColor }) {
+function TimePicker12({ value, onChange, accentColor, label = 'Time' }) {
   const { h12, min, period } = to12(value);
-  const selStyle = { flex: 1, minWidth: 0, padding: '8px 3px', fontSize: 11.5, textAlign: 'center' };
+  const selStyle = { flex: 1, minWidth: 0, height: 40, padding: '0 4px', fontSize: 14, textAlign: 'center', textAlignLast: 'center', boxSizing: 'border-box', background: '#fff' };
   const set = (nh, nm, np) => onChange(to24(nh, nm, np));
   return (
     <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 0 }}>
-      <select className="form-select" style={selStyle} value={h12}
+      <select className="form-select" style={selStyle} value={h12} aria-label={`${label} hour`}
         onChange={(e) => set(e.target.value, min || '00', period)}>
         <option value="">--</option>
         {HOUR_OPTS.map(h => <option key={h} value={h}>{h}</option>)}
       </select>
-      <span style={{ color: accentColor || 'var(--gray)', fontWeight: 700, flexShrink: 0 }}>:</span>
-      <select className="form-select" style={selStyle} value={min}
+      <span aria-hidden="true" style={{ color: accentColor || 'var(--gray)', fontWeight: 700, flexShrink: 0 }}>:</span>
+      <select className="form-select" style={selStyle} value={min} aria-label={`${label} minutes`}
         onChange={(e) => set(h12 || '12', e.target.value, period)}>
         <option value="">--</option>
         {MIN_OPTS.map(m => <option key={m} value={m}>{m}</option>)}
       </select>
-      <select className="form-select" style={{ ...selStyle, flex: '0 0 54px', padding: '10px 2px' }} value={period}
+      <select className="form-select" style={{ ...selStyle, flex: '0 0 60px' }} value={period} aria-label={`${label} AM or PM`}
         onChange={(e) => set(h12 || '12', min || '00', e.target.value)}>
         <option value="AM">AM</option>
         <option value="PM">PM</option>
@@ -112,6 +112,175 @@ const VIEW_TYPE_OPTIONS = [
   { v: 'month', l: '📆 Month' },
   { v: 'year', l: '🗓️ Year' },
 ];
+
+// Lucide-style outline icons (inline, so no extra dependency is needed).
+const FORM_ICONS = {
+  clipboardList: <><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01" /></>,
+  calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>,
+  trophy: <><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></>,
+  layers: <><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" /><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" /><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" /></>,
+  clock: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>,
+  notebookPen: <><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4" /><path d="M2 6h4M2 10h4M2 14h4M2 18h4" /><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" /></>,
+  save: <><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7" /></>,
+  check: <path d="M20 6 9 17l-5-5" />,
+  x: <path d="M18 6 6 18M6 6l12 12" />,
+};
+
+function FormIcon({ name, size = 14, stroke = 2 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke}
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      {FORM_ICONS[name]}
+    </svg>
+  );
+}
+
+const CL_CSS = `
+.cl-sheet button:focus-visible,.cl-sheet input:focus-visible,.cl-sheet select:focus-visible,.cl-sheet textarea:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+.cl-sheet .cl-btn{transition:transform .12s ease,background-color .15s ease,opacity .15s ease}
+.cl-sheet .cl-btn:active:not(:disabled){transform:scale(.98)}
+.cl-sheet .cl-btn:disabled{opacity:.6;cursor:not-allowed}
+.cl-grid{display:grid;gap:10px}
+.cl-grid.cl-2{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.cl-grid.cl-time{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+`;
+
+function FieldLabel({ htmlFor, id, icon, required, children }) {
+  return (
+    <label htmlFor={htmlFor} id={id} className="form-label"
+      style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#1A336A', marginBottom: 5 }}>
+      {icon && <FormIcon name={icon} size={13} />}
+      <span>{children}{required && <span aria-hidden="true" style={{ color: '#B91C1C' }}> *</span>}</span>
+    </label>
+  );
+}
+
+// Shared presentation for both the Add and Edit class-log forms. It holds no
+// state and no business logic — every value and handler comes from the page.
+function ClassLogSheet({
+  idp, mode, subtitle, values, sportOptions, batchOptions,
+  onDate, onSport, onBatch, onInTime, onOutTime, onNote,
+  onClose, onSubmit, submitLabel, busy,
+}) {
+  const duration = calcDuration(values.inTime, values.outTime);
+  const titleId = `${idp}-title`;
+  const ctl = { width: '100%', minWidth: 0, height: 40, fontSize: 14, padding: '0 10px', boxSizing: 'border-box', background: '#fff' };
+  return (
+    <div
+      className="modal-overlay active"
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 62, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(10,20,40,.55)', padding: 0, boxSizing: 'border-box' }}
+      onClick={onClose}
+    >
+      <div
+        className="cl-sheet"
+        role="dialog" aria-modal="true" aria-labelledby={titleId}
+        onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+        style={{
+          width: '100%', maxWidth: 480, maxHeight: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          background: 'var(--card, #fff)', border: '1px solid var(--border)', borderBottom: 'none',
+          borderRadius: '16px 16px 0 0', boxShadow: '0 -6px 20px rgba(10,20,40,.16)', boxSizing: 'border-box',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <style>{CL_CSS}</style>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px 10px', flex: '0 0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(91,124,196,.12)', color: '#1A336A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <FormIcon name="clipboardList" size={18} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div id={titleId} style={{ fontWeight: 700, fontSize: 17, color: '#182238', lineHeight: 1.2 }}>
+                {mode === 'edit' ? 'Edit Class Log' : 'Add Class Log'}
+              </div>
+              {subtitle && <div style={{ fontSize: 11.5, color: 'var(--gray)', marginTop: 2, overflowWrap: 'anywhere' }}>{subtitle}</div>}
+            </div>
+          </div>
+          <button type="button" className="cl-btn" onClick={onClose} aria-label="Close class log form"
+            style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--card2)', border: '1px solid var(--border)', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}>
+            <FormIcon name="x" size={16} />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div
+          onFocus={(e) => { const t = e.target; setTimeout(() => t.scrollIntoView?.({ block: 'nearest' }), 250); }}
+          style={{ overflowY: 'auto', overscrollBehavior: 'contain', padding: '2px 14px 12px', flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 12 }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <FieldLabel htmlFor={`${idp}-date`} icon="calendar" required>Date</FieldLabel>
+            <input id={`${idp}-date`} type="date" className="form-input" style={ctl}
+              value={values.date} onChange={(e) => onDate(e.target.value)} />
+          </div>
+
+          <div className="cl-grid cl-2">
+            <div style={{ minWidth: 0 }}>
+              <FieldLabel htmlFor={`${idp}-sport`} icon="trophy">Sport</FieldLabel>
+              <select id={`${idp}-sport`} className="form-select" style={ctl} value={values.sport}
+                onChange={(e) => onSport(e.target.value)}>
+                <option value="">— Select —</option>
+                {sportOptions.map(sp => <option key={sp} value={sp}>{sp}</option>)}
+              </select>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <FieldLabel htmlFor={`${idp}-batch`} icon="layers" required>Batch</FieldLabel>
+              <select id={`${idp}-batch`} className="form-select" style={ctl} value={values.batch}
+                onChange={(e) => onBatch(e.target.value)}>
+                <option value="">{values.sport ? '— Select —' : '— sport first —'}</option>
+                {batchOptions.map(b => <option key={b.name} value={b.name}>{b.batchLabel}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Class timing */}
+          <div role="group" aria-labelledby={`${idp}-timing`} style={{ background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 10px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8, minHeight: 22 }}>
+              <span id={`${idp}-timing`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#1A336A' }}>
+                <FormIcon name="clock" size={14} /> Class timing
+              </span>
+              {duration && (
+                <span aria-label={`Duration ${duration}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 22, padding: '0 8px', boxSizing: 'border-box', fontSize: 11, fontWeight: 600, lineHeight: 1, background: 'rgba(91,124,196,.10)', color: '#1A336A', border: '1px solid rgba(91,124,196,.22)', borderRadius: 6, whiteSpace: 'nowrap' }}>
+                  <FormIcon name="clock" size={12} stroke={2.2} /> {duration}
+                </span>
+              )}
+            </div>
+            <div className="cl-grid cl-time">
+              <div role="group" aria-labelledby={`${idp}-in`} style={{ minWidth: 0 }}>
+                <div id={`${idp}-in`} style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 5 }}>In time</div>
+                <TimePicker12 label="In time" value={values.inTime} onChange={onInTime} />
+              </div>
+              <div role="group" aria-labelledby={`${idp}-out`} style={{ minWidth: 0 }}>
+                <div id={`${idp}-out`} style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 5 }}>Out time</div>
+                <TimePicker12 label="Out time" value={values.outTime} onChange={onOutTime} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            <FieldLabel htmlFor={`${idp}-note`} icon="notebookPen">
+              Notes <span style={{ fontWeight: 400, color: 'var(--gray)' }}>(optional)</span>
+            </FieldLabel>
+            <textarea id={`${idp}-note`} className="form-input" rows={4}
+              style={{ resize: 'vertical', minHeight: 88, width: '100%', boxSizing: 'border-box', fontSize: 14, lineHeight: 1.45, padding: '9px 10px', background: '#fff', overflowWrap: 'anywhere' }}
+              placeholder="e.g. Warm-up, basics, drills…"
+              value={values.note} onChange={(e) => onNote(e.target.value)} />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10, padding: '10px 14px calc(12px + env(safe-area-inset-bottom, 0px))', borderTop: '1px solid var(--border)', background: 'var(--card, #fff)', flex: '0 0 auto' }}>
+          <button type="button" className="btn btn-outline cl-btn" onClick={onClose}
+            style={{ flex: 1, minHeight: 44, borderRadius: 12, color: '#1A336A', fontWeight: 600, fontSize: 13.5 }}>Cancel</button>
+          <button type="button" className="btn btn-primary cl-btn" disabled={busy} onClick={onSubmit}
+            style={{ flex: 1.6, minHeight: 44, borderRadius: 12, background: '#1A336A', color: '#fff', border: 'none', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <FormIcon name={mode === 'edit' ? 'save' : 'check'} size={16} /> {submitLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ClassLogPage() {
   const { academyId, isAdmin, appUser, assignedSports, assignedBatches, canExport } = useAuth();
@@ -538,165 +707,40 @@ export default function ClassLogPage() {
 
       {/* ── Add Modal ── */}
       {showAdd && (
-        <div
-          className="modal-overlay active"
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(10,20,40,.55)', padding: '4vw', boxSizing: 'border-box',
-          }}
-          onClick={() => setShowAdd(false)}
-        >
-          <div
-            className="modal"
-            style={{
-              borderRadius: 18, width: '100%', maxWidth: 'min(360px, 100%)',
-              maxHeight: '90vh', display: 'flex', flexDirection: 'column',
-              boxSizing: 'border-box', overflow: 'hidden',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ overflowY: 'auto', padding: 'clamp(12px, 4vw, 20px)', flex: '1 1 auto', minHeight: 0 }}>
-              <div className="modal-title">
-                Log a Class
-                <button className="modal-close" onClick={() => setShowAdd(false)}>×</button>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 100px', minWidth: 0 }}>
-                  <label className="form-label" style={{ display: 'block', fontSize: 10.5, marginBottom: 2 }}>Date</label>
-                  <input type="date" className="form-input" style={{ width: '100%', minWidth: 0, fontSize: 11, padding: '7px 6px', boxSizing: 'border-box' }}
-                    value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} />
-                </div>
-                <div style={{ flex: '1 1 90px', minWidth: 0 }}>
-                  <label className="form-label" style={{ display: 'block', fontSize: 10.5, marginBottom: 2 }}>🏆 Sport</label>
-                  <select className="form-select" style={{ width: '100%', minWidth: 0, fontSize: 11, padding: '7px 6px' }} value={form.sport}
-                    onChange={(e) => setForm(f => ({ ...f, sport: e.target.value, batch: '' }))}>
-                    <option value="">— Select —</option>
-                    {sportOptions.map(sp => <option key={sp} value={sp}>{sp}</option>)}
-                  </select>
-                </div>
-                <div style={{ flex: '1 1 90px', minWidth: 0 }}>
-                  <label className="form-label" style={{ display: 'block', fontSize: 10.5, marginBottom: 2 }}>Batch</label>
-                  <select className="form-select" style={{ width: '100%', minWidth: 0, fontSize: 11, padding: '7px 6px' }} value={form.batch} onChange={(e) => setForm(f => ({ ...f, batch: e.target.value }))}>
-                    <option value="">{form.sport ? '— Select —' : '— sport first —'}</option>
-                    {addBatchOptions.map(b => <option key={b.name} value={b.name}>{b.batchLabel}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 10px', marginBottom: 10 }}>
-                <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--gray)', letterSpacing: '.4px', marginBottom: 6 }}>⏱ CLASS TIMING</div>
-                <div className="modal-timing-row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <div style={{ flex: '1 1 120px', minWidth: 0 }}>
-                    <label style={{ display: 'block', fontSize: 10.5, marginBottom: 2, color: '#16a34a' }}>🟢 In Time</label>
-                    <TimePicker12 value={form.inTime} onChange={(v) => setForm(f => ({ ...f, inTime: v }))} accentColor="#16a34a" />
-                  </div>
-                  <div style={{ flex: '1 1 120px', minWidth: 0 }}>
-                    <label style={{ display: 'block', fontSize: 10.5, marginBottom: 2, color: '#dc2626' }}>🔴 Out Time</label>
-                    <TimePicker12 value={form.outTime} onChange={(v) => setForm(f => ({ ...f, outTime: v }))} accentColor="#dc2626" />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label" style={{ display: 'block', fontSize: 10.5, marginBottom: 2 }}>
-                  Notes <span style={{ fontWeight: 400, color: 'var(--gray)' }}>(optional)</span>
-                </label>
-                <textarea className="form-input" rows={4} style={{ resize: 'vertical', minHeight: 70, width: '100%', boxSizing: 'border-box', fontSize: 11 }}
-                  placeholder="e.g. Warm-up, basics, drills…"
-                  value={form.note} onChange={(e) => setForm(f => ({ ...f, note: e.target.value }))} />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10, padding: 'clamp(12px, 4vw, 20px)', paddingTop: 10, borderTop: '1px solid var(--border)', flex: '0 0 auto' }}>
-              <button className="btn btn-outline" style={{ flex: 1, padding: 10, fontSize: 12 }} onClick={() => setShowAdd(false)}>Cancel</button>
-              <button className="btn btn-primary" style={{ flex: 2, padding: 10, fontSize: 12 }} disabled={saving} onClick={saveNewEntry}>
-                {saving ? 'Saving…' : '💾 Save Entry'}
-              </button>
-            </div>
-          </div>
-        </div>
-
+        <ClassLogSheet
+          idp="cl-add" mode="add"
+          values={{ date: form.date, sport: form.sport, batch: form.batch, inTime: form.inTime, outTime: form.outTime, note: form.note }}
+          sportOptions={sportOptions} batchOptions={addBatchOptions}
+          onDate={(v) => setForm(f => ({ ...f, date: v }))}
+          onSport={(v) => setForm(f => ({ ...f, sport: v, batch: '' }))}
+          onBatch={(v) => setForm(f => ({ ...f, batch: v }))}
+          onInTime={(v) => setForm(f => ({ ...f, inTime: v }))}
+          onOutTime={(v) => setForm(f => ({ ...f, outTime: v }))}
+          onNote={(v) => setForm(f => ({ ...f, note: v }))}
+          onClose={() => setShowAdd(false)}
+          onSubmit={saveNewEntry}
+          submitLabel={saving ? 'Saving…' : 'Create Class Log'}
+          busy={saving}
+        />
       )}
 
-      {/* ── Edit Modal (admin only) ── */}
+      {/* ── Edit Modal ── */}
       {editEntry && (
-        <div
-          className="modal-overlay active"
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(10,20,40,.55)', padding: '4vw', boxSizing: 'border-box',
-          }}
-          onClick={() => setEditEntry(null)}
-        >
-          <div
-            className="modal"
-            style={{
-              borderRadius: 18, width: '100%', maxWidth: 'min(360px, 100%)',
-              maxHeight: '90vh', display: 'flex', flexDirection: 'column',
-              boxSizing: 'border-box', overflow: 'hidden',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ overflowY: 'auto', padding: 'clamp(12px, 4vw, 20px)', flex: '1 1 auto', minHeight: 0 }}>
-              <div className="modal-title">
-                Edit Entry
-                <button className="modal-close" onClick={() => setEditEntry(null)}>×</button>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 100px', minWidth: 0 }}>
-                  <label className="form-label" style={{ display: 'block', fontSize: 10.5, marginBottom: 2 }}>Date</label>
-                  <input type="date" className="form-input" style={{ width: '100%', minWidth: 0, fontSize: 11, padding: '7px 6px', boxSizing: 'border-box' }}
-                    value={editEntry.date || ''} onChange={(e) => setEditEntry(v => ({ ...v, date: e.target.value }))} />
-                </div>
-                <div style={{ flex: '1 1 90px', minWidth: 0 }}>
-                  <label className="form-label" style={{ display: 'block', fontSize: 10.5, marginBottom: 2 }}>🏆 Sport</label>
-                  <select className="form-select" style={{ width: '100%', minWidth: 0, fontSize: 11, padding: '7px 6px' }} value={editEntry.sport || ''}
-                    onChange={(e) => setEditEntry(v => ({ ...v, sport: e.target.value, batch: '' }))}>
-                    <option value="">— Select —</option>
-                    {sportOptions.map(sp => <option key={sp} value={sp}>{sp}</option>)}
-                  </select>
-                </div>
-                <div style={{ flex: '1 1 90px', minWidth: 0 }}>
-                  <label className="form-label" style={{ display: 'block', fontSize: 10.5, marginBottom: 2 }}>Batch</label>
-                  <select className="form-select" style={{ width: '100%', minWidth: 0, fontSize: 11, padding: '7px 6px' }} value={editEntry.batch || ''}
-                    onChange={(e) => setEditEntry(v => ({ ...v, batch: e.target.value }))}>
-                    <option value="">{editEntry.sport ? '— Select —' : '— sport first —'}</option>
-                    {editBatchOptions.map(b => <option key={b.name} value={b.name}>{b.batchLabel}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ background: 'var(--card2)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 10px', marginBottom: 10 }}>
-                <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--gray)', letterSpacing: '.4px', marginBottom: 6 }}>⏱ CLASS TIMING</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <div style={{ flex: '1 1 120px', minWidth: 0 }}>
-                    <label style={{ display: 'block', fontSize: 10.5, marginBottom: 2, color: '#16a34a' }}>🟢 In Time</label>
-                    <TimePicker12 value={editEntry.inTime || ''} onChange={(v) => setEditEntry(en => ({ ...en, inTime: v }))} accentColor="#16a34a" />
-                  </div>
-                  <div style={{ flex: '1 1 120px', minWidth: 0 }}>
-                    <label style={{ display: 'block', fontSize: 10.5, marginBottom: 2, color: '#dc2626' }}>🔴 Out Time</label>
-                    <TimePicker12 value={editEntry.outTime || ''} onChange={(v) => setEditEntry(en => ({ ...en, outTime: v }))} accentColor="#dc2626" />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label" style={{ display: 'block', fontSize: 10.5, marginBottom: 2 }}>Notes</label>
-                <textarea className="form-input" rows={4} style={{ resize: 'vertical', minHeight: 70, width: '100%', boxSizing: 'border-box', fontSize: 11 }}
-                  value={editEntry.note || ''} onChange={(e) => setEditEntry(v => ({ ...v, note: e.target.value }))} />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10, padding: 'clamp(12px, 4vw, 20px)', paddingTop: 10, borderTop: '1px solid var(--border)', flex: '0 0 auto' }}>
-              <button className="btn btn-outline" style={{ flex: 1, padding: 10, fontSize: 12 }} onClick={() => setEditEntry(null)}>Cancel</button>
-              <button className="btn btn-primary" style={{ flex: 2, padding: 10, fontSize: 12 }} onClick={saveEdit}>💾 Save Changes</button>
-            </div>
-          </div>
-        </div>
+        <ClassLogSheet
+          idp="cl-edit" mode="edit"
+          subtitle={editEntry.by ? `Logged by ${editEntry.by}` : undefined}
+          values={{ date: editEntry.date || '', sport: editEntry.sport || '', batch: editEntry.batch || '', inTime: editEntry.inTime || '', outTime: editEntry.outTime || '', note: editEntry.note || '' }}
+          sportOptions={sportOptions} batchOptions={editBatchOptions}
+          onDate={(v) => setEditEntry(e => ({ ...e, date: v }))}
+          onSport={(v) => setEditEntry(e => ({ ...e, sport: v, batch: '' }))}
+          onBatch={(v) => setEditEntry(e => ({ ...e, batch: v }))}
+          onInTime={(v) => setEditEntry(e => ({ ...e, inTime: v }))}
+          onOutTime={(v) => setEditEntry(e => ({ ...e, outTime: v }))}
+          onNote={(v) => setEditEntry(e => ({ ...e, note: v }))}
+          onClose={() => setEditEntry(null)}
+          onSubmit={saveEdit}
+          submitLabel="Save Changes"
+        />
       )}
     </div>
   );
