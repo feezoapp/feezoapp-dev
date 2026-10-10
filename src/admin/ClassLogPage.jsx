@@ -78,21 +78,23 @@ function TimePicker12({ value, onChange, accentColor, label = 'Time' }) {
   );
 }
 
-// Same centered popup used by StudentsTab's / AttendanceTab's / HomeTab's /
-// FeesTab's / EnquiryTab's filters — a dark overlay + a card of radio rows,
-// closing itself on selection.
+// Centered picker popup — same look as FeesTab / EnquiryTab. Props unchanged.
 function FilterPopup({ title, onClose, children }) {
   return (
     <div
+      className="cl-overlay"
       onClick={onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      role="dialog" aria-modal="true" aria-label={title}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(10,18,35,.5)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
     >
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', borderRadius: 12, padding: 14, width: '85%', maxWidth: 320, maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 8px 30px rgba(0,0,0,.4)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 800 }}>{title}</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--gray)', cursor: 'pointer' }}>×</button>
+      <div className="cl-popup" onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, padding: '14px 12px 10px', width: '100%', maxWidth: 320, maxHeight: 'min(68vh, 480px)', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 32px rgba(10,18,35,.24)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: 6, padding: '0 4px', flexShrink: 0 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: '#1A336A', textAlign: 'center' }}>{title}</div>
+          <button type="button" className="cl-iconbtn" onClick={onClose} aria-label="Close" style={{ position: 'absolute', right: 0, width: 28, height: 28, borderRadius: '50%', background: '#F1F3F8', border: 'none', color: '#6B7385', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+            <FormIcon name="x" size={15} />
+          </button>
         </div>
-        {children}
+        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>{children}</div>
       </div>
     </div>
   );
@@ -100,17 +102,31 @@ function FilterPopup({ title, onClose, children }) {
 
 function RadioRow({ name, checked, onChange, label }) {
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '7px 2px', cursor: 'pointer' }}>
-      <input type="radio" name={name} checked={checked} onChange={onChange} />
+    <label style={{
+      display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, minHeight: 42, padding: '8px 10px', borderRadius: 10,
+      cursor: 'pointer', margin: '2px 0', background: checked ? 'rgba(91,124,196,.12)' : 'transparent',
+      color: checked ? '#1A336A' : '#333', fontWeight: checked ? 600 : 500, transition: 'background .15s ease, color .15s ease',
+    }}>
+      <input type="radio" name={name} checked={checked} onChange={onChange} style={{ width: 18, height: 18, accentColor: '#1A336A', flexShrink: 0, cursor: 'pointer' }} />
       {label}
     </label>
   );
 }
 
+// Equal-size filter chip, light blue when a filter is applied (same as FeesTab).
+function chipStyle(on) {
+  return {
+    flex: '1 1 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0,
+    height: 36, fontSize: 12, fontWeight: 600, padding: '0 8px', borderRadius: 10, fontFamily: 'inherit',
+    border: `1px solid ${on ? '#5B7CC4' : 'var(--border)'}`,
+    background: on ? 'rgba(91,124,196,.10)' : 'var(--card2)', color: '#1A336A', cursor: 'pointer',
+  };
+}
+
 const VIEW_TYPE_OPTIONS = [
-  { v: 'day', l: '📅 Day' },
-  { v: 'month', l: '📆 Month' },
-  { v: 'year', l: '🗓️ Year' },
+  { v: 'day', l: 'Day' },
+  { v: 'month', l: 'Month' },
+  { v: 'year', l: 'Year' },
 ];
 
 // Lucide-style outline icons (inline, so no extra dependency is needed).
@@ -124,6 +140,17 @@ const FORM_ICONS = {
   save: <><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7" /></>,
   check: <path d="M20 6 9 17l-5-5" />,
   x: <path d="M18 6 6 18M6 6l12 12" />,
+  plus: <path d="M5 12h14M12 5v14" />,
+  funnel: <path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z" />,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
+  chevronUp: <path d="m18 15-6-6-6 6" />,
+  pencil: <><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></>,
+  trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6" />,
+  userRound: <><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></>,
+  logIn: <><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="m10 17 5-5-5-5" /><path d="M15 12H3" /></>,
+  logOut: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></>,
+  fileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" /></>,
+  sheet: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" /><path d="M14 2v6h6M8 13h2M14 13h2M8 17h2M14 17h2" /></>,
 };
 
 function FormIcon({ name, size = 14, stroke = 2 }) {
@@ -134,6 +161,40 @@ function FormIcon({ name, size = 14, stroke = 2 }) {
     </svg>
   );
 }
+
+const CL_TONES = {
+  neutral: { bg: 'var(--card2, #F1F5FB)', color: '#475569', border: 'var(--border, #DCE4F2)' },
+  info:    { bg: 'rgba(91,124,196,.10)', color: '#1A336A', border: 'rgba(91,124,196,.22)' },
+  success: { bg: '#ECFDF5', color: '#15803D', border: '#BBF7D0' },
+  danger:  { bg: '#FEF2F2', color: '#B91C1C', border: '#FECACA' },
+};
+function ClChip({ icon, tone = 'neutral', children }) {
+  const t = CL_TONES[tone] || CL_TONES.neutral;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 22, padding: '0 7px', boxSizing: 'border-box', fontSize: 11, fontWeight: 600, lineHeight: 1, background: t.bg, color: t.color, border: `1px solid ${t.border}`, borderRadius: 6, whiteSpace: 'nowrap', maxWidth: '100%', flexShrink: 0 }}>
+      {icon && <FormIcon name={icon} size={12} stroke={2.2} />}
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{children}</span>
+    </span>
+  );
+}
+
+const CL_PAGE_CSS = `
+.cl-chip{transition:border-color .15s ease,background-color .15s ease,transform .12s ease}
+.cl-chip:hover{border-color:#9DB2DD}
+.cl-chip:active:not(:disabled){transform:scale(.97)}
+.cl-chip:focus-visible,.cl-iconbtn:focus-visible,.cl-head:focus-visible,.cl-act:focus-visible,.cl-field:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
+.cl-act{transition:background-color .15s ease,border-color .15s ease,transform .12s ease}
+.cl-act:active{transform:scale(.95)}
+.cl-card{display:flex;align-items:flex-start;gap:10px;padding:12px;margin-bottom:8px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(16,32,64,.05);box-sizing:border-box;max-width:100%;transition:border-color .15s ease,box-shadow .15s ease}
+@media (hover:hover){.cl-card:hover{border-color:#B9C7E6;box-shadow:0 2px 8px rgba(16,32,64,.07)}}
+.cl-field{width:100%;height:40px;box-sizing:border-box;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:var(--card2);font-size:14px;color:#182238;font-family:inherit;outline:none;min-width:0}
+.cl-field:focus{border-color:#5B7CC4;box-shadow:0 0 0 3px rgba(91,124,196,.18);background:#fff}
+@keyframes cl-fade{from{opacity:0}to{opacity:1}}
+@keyframes cl-pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.cl-overlay{animation:cl-fade .15s ease}
+.cl-popup,.cl-panel{animation:cl-pop .16s ease}
+@media (prefers-reduced-motion:reduce){.cl-chip,.cl-act,.cl-card,.cl-overlay,.cl-popup,.cl-panel{animation:none !important;transition:none !important}}
+`;
 
 const CL_CSS = `
 .cl-sheet button:focus-visible,.cl-sheet input:focus-visible,.cl-sheet select:focus-visible,.cl-sheet textarea:focus-visible{outline:2px solid #5B7CC4;outline-offset:2px}
@@ -299,6 +360,7 @@ export default function ClassLogPage() {
   const [filterMonth, setFilterMonth] = useState(todayStr().slice(0, 7));
   const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()));
   const [popup, setPopup] = useState(null); // 'sport' | 'batch' | 'staff' | 'viewType' | 'year' | null
+  const [filtersOpen, setFiltersOpen] = useState(false); // filter card collapsed by default (UI only)
 
   // Add modal
   const [showAdd, setShowAdd] = useState(false);
@@ -539,83 +601,106 @@ export default function ClassLogPage() {
     return Array.from({ length: 6 }, (_, i) => String(y - i));
   }, []);
 
+  const monthLabel = (m) => { const [y, mo] = (m || '').split('-'); return y && mo ? `${MONTHS[parseInt(mo, 10) - 1]} ${y}` : ''; };
+  const periodLabel = viewType === 'day' ? filterDate : viewType === 'year' ? filterYear : monthLabel(filterMonth);
+  const batchFilterLabel = filterBatchOptions.find(b => b.name === filterBatch)?.batchLabel;
+  const filterSummary = [filterSport, batchFilterLabel, isAdmin ? filterStaff : ''].filter(Boolean).join(' · ');
+  const roundBtn = { width: 36, height: 36, borderRadius: '50%', border: '2px solid #04213A', padding: 0, flexShrink: 0, background: '#fff', color: '#04213A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 3px rgba(4,33,58,.2)' };
+
   return (
-    <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', paddingBottom: 90 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 6, flexWrap: 'wrap' }}>
-        <div className="section-title" style={{ marginBottom: 0 }}>📋 Class Log</div>
-        <div style={{ display: 'flex', gap: 6 }}>
+    <div className="page active" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', paddingBottom: 'calc(90px + env(safe-area-inset-bottom, 0px))' }}>
+      <style>{CL_PAGE_CSS}</style>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1A336A', minWidth: 0 }}>
+          <FormIcon name="clipboardList" size={20} />
+          <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-.01em' }}>Class Log</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
           {canExport && (
             <>
-              <button className="btn" style={{ background: 'var(--gold)', color: '#fff', fontSize: 11, padding: '7px 10px' }} onClick={handleExportPdf}>PDF</button>
-              <button className="btn" style={{ background: '#16a34a', color: '#fff', fontSize: 11, padding: '7px 10px' }} onClick={handleExportXlsx}>XL</button>
+              <button type="button" className="cl-act" style={roundBtn} onClick={handleExportPdf} aria-label="Export PDF" title="Export PDF"><FormIcon name="fileText" size={17} /></button>
+              <button type="button" className="cl-act" style={roundBtn} onClick={handleExportXlsx} aria-label="Export Excel" title="Export Excel"><FormIcon name="sheet" size={17} /></button>
             </>
           )}
           <LimitGatedButton
             resource="classLogs"
             currentCount={classLogCount}
             className="btn btn-primary"
-            style={{ fontSize: 12, padding: '7px 12px' }}
+            style={{ height: 36, padding: '0 14px', borderRadius: 18, fontSize: 13, fontWeight: 700, background: '#1A336A', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
             onClick={openAdd}
-          >+ Add</LimitGatedButton>
+          ><FormIcon name="plus" size={16} stroke={2.4} /> Add</LimitGatedButton>
         </div>
       </div>
 
-      {/* Sport / Batch filters */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 7, flexWrap: 'wrap' }}>
-        <button
-          className="btn btn-outline btn-sm"
-          style={{ flex: 1, minWidth: 100, padding: '7px 10px', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          onClick={() => setPopup('sport')}
+      {/* Filters card — same look as FeesTab / EnquiryTab */}
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 10px', marginBottom: 8, boxShadow: '0 1px 2px rgba(16,32,64,.05)', flexShrink: 0 }}>
+        <div
+          className="cl-head"
+          role="button" tabIndex={0} aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen(v => !v)}
+          onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setFiltersOpen(v => !v); } }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'pointer', minHeight: 36 }}
         >
-          {filterSport || 'All Sports'}
-        </button>
-        <button
-          className="btn btn-outline btn-sm"
-          style={{ flex: 1, minWidth: 100, padding: '7px 10px', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          onClick={() => setPopup('batch')}
-        >
-          {filterBatchOptions.find(b => b.name === filterBatch)?.batchLabel || 'All Batches'}
-        </button>
-      </div>
-
-      {/* Staff filter (admin only) */}
-      {isAdmin && (
-        <div style={{ marginBottom: 7 }}>
-          <button
-            className="btn btn-outline btn-sm"
-            style={{ width: '100%', padding: '7px 10px', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            onClick={() => setPopup('staff')}
-          >
-            {filterStaff || '👤 All Staff/Admins'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <span style={{ display: 'flex', color: '#1A336A' }} aria-hidden="true"><FormIcon name="calendar" size={18} /></span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: '#182238', whiteSpace: 'nowrap' }}>{periodLabel}</span>
+            {filterSummary && (
+              <span style={{ fontSize: 11.5, color: 'var(--gray)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{filterSummary}</span>
+            )}
+          </div>
+          <button type="button" className="cl-iconbtn"
+            style={{ width: 28, height: 28, borderRadius: '50%', border: 'none', background: 'var(--card2)', color: '#1A336A', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, flexShrink: 0 }}
+            aria-label={filtersOpen ? 'Collapse filters' : 'Expand filters'} aria-expanded={filtersOpen}
+            onClick={(e) => { e.stopPropagation(); setFiltersOpen(v => !v); }}>
+            <FormIcon name={filtersOpen ? 'chevronUp' : 'chevronDown'} size={16} />
           </button>
         </div>
-      )}
 
-      {/* Day / Month / Year view */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <button
-          className="btn btn-outline btn-sm"
-          style={{ flex: '0 0 auto', padding: '7px 10px', fontSize: 12 }}
-          onClick={() => setPopup('viewType')}
-        >
-          {VIEW_TYPE_OPTIONS.find(o => o.v === viewType)?.l}
-        </button>
-        {viewType === 'day' && (
-          <input type="date" className="form-input" style={{ flex: 1, minWidth: 120, padding: '7px 10px', fontSize: 12 }}
-            value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
-        )}
-        {viewType === 'month' && (
-          <input type="month" className="form-input" style={{ flex: 1, minWidth: 120, padding: '7px 10px', fontSize: 12 }}
-            value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} />
-        )}
-        {viewType === 'year' && (
-          <button
-            className="btn btn-outline btn-sm"
-            style={{ flex: 1, minWidth: 100, padding: '7px 10px', fontSize: 12 }}
-            onClick={() => setPopup('year')}
-          >
-            {filterYear}
-          </button>
+        {filtersOpen && (
+          <div className="cl-panel" style={{ marginTop: 8, marginBottom: 6, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div role="group" aria-label="View mode" style={{ display: 'flex', gap: 3, padding: 3, borderRadius: 11, background: 'var(--card2)', border: '1px solid var(--border)' }}>
+              {VIEW_TYPE_OPTIONS.map(o => (
+                <button key={o.v} type="button" className="cl-chip" aria-pressed={viewType === o.v}
+                  style={{ flex: 1, height: 30, borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, background: viewType === o.v ? '#1A336A' : 'transparent', color: viewType === o.v ? '#fff' : '#1A336A' }}
+                  onClick={() => setViewType(o.v)}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+
+            {viewType === 'day' && (
+              <input type="date" className="cl-field" aria-label="Select date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+            )}
+            {viewType === 'month' && (
+              <input type="month" className="cl-field" aria-label="Select month" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} />
+            )}
+            {viewType === 'year' && (
+              <button type="button" className="cl-chip" style={{ ...chipStyle(false), flex: 'none', width: '100%', height: 40 }} onClick={() => setPopup('year')} aria-haspopup="dialog" aria-label="Select year">
+                <span>{filterYear}</span>
+                <FormIcon name="chevronDown" size={13} />
+              </button>
+            )}
+
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button type="button" className="cl-chip" style={chipStyle(!!filterSport)} onClick={() => setPopup('sport')} aria-haspopup="dialog" aria-label="Filter by sport">
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filterSport || 'All Sports'}</span>
+                <FormIcon name="chevronDown" size={13} />
+              </button>
+              <button type="button" className="cl-chip" style={chipStyle(!!filterBatch)} onClick={() => setPopup('batch')} aria-haspopup="dialog" aria-label="Filter by batch">
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{batchFilterLabel || 'All Batches'}</span>
+                <FormIcon name="chevronDown" size={13} />
+              </button>
+            </div>
+            {isAdmin && (
+              <button type="button" className="cl-chip" style={{ ...chipStyle(!!filterStaff), flex: 'none', width: '100%' }} onClick={() => setPopup('staff')} aria-haspopup="dialog" aria-label="Filter by staff">
+                <FormIcon name="userRound" size={14} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filterStaff || 'All Staff/Admins'}</span>
+                <FormIcon name="chevronDown" size={13} />
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -639,17 +724,9 @@ export default function ClassLogPage() {
 
       {popup === 'staff' && isAdmin && (
         <FilterPopup title="Filter by Staff" onClose={() => setPopup(null)}>
-          <RadioRow name="staffsel" checked={!filterStaff} onChange={() => { setFilterStaff(''); setPopup(null); }} label="👤 All Staff/Admins" />
+          <RadioRow name="staffsel" checked={!filterStaff} onChange={() => { setFilterStaff(''); setPopup(null); }} label="All Staff/Admins" />
           {staffOptions.map(n => (
             <RadioRow key={n} name="staffsel" checked={filterStaff === n} onChange={() => { setFilterStaff(n); setPopup(null); }} label={n} />
-          ))}
-        </FilterPopup>
-      )}
-
-      {popup === 'viewType' && (
-        <FilterPopup title="Select View" onClose={() => setPopup(null)}>
-          {VIEW_TYPE_OPTIONS.map(o => (
-            <RadioRow key={o.v} name="viewtypesel" checked={viewType === o.v} onChange={() => { setViewType(o.v); setPopup(null); }} label={o.l} />
           ))}
         </FilterPopup>
       )}
@@ -664,39 +741,46 @@ export default function ClassLogPage() {
 
       {/* List */}
       {loading ? (
-        <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30 }}>Loading…</div>
+        <div style={{ textAlign: 'center', color: 'var(--gray)', padding: 30, fontSize: 13 }}>Loading…</div>
       ) : filteredList.length === 0 ? (
-        <div className="empty-state" style={{ padding: 20, textAlign: 'center', color: 'var(--gray)' }}>No entries found.</div>
+        <div className="empty-state" style={{ padding: '28px 20px', textAlign: 'center', color: 'var(--gray)', fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: '#9DB2DD' }}><FormIcon name="clipboardList" size={28} /></span>
+          No entries found.
+        </div>
       ) : (
         filteredList.map(e => {
           const d = new Date(e.date + 'T00:00:00');
           const dateDisp = `${DAYS[d.getDay()]}, ${pad(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
           const inDisp = fmt12(e.inTime);
           const outDisp = fmt12(e.outTime);
+          const bk = parseBatchKey(e.batch);
           return (
-            <div key={e.id} className="card" style={{ padding: '11px 13px', marginBottom: 6, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <div key={e.id} className="cl-card">
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>{dateDisp}</span>
-                  <span className="badge badge-blue" style={{ fontSize: 10 }}>{parseBatchKey(e.batch).sport} : {parseBatchKey(e.batch).label}</span>
+                <div style={{ fontSize: 14.5, fontWeight: 700, color: '#182238', lineHeight: 1.25 }}>{dateDisp}</div>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 6 }}>
+                  <ClChip icon="layers" tone="info">{bk.sport} : {bk.label}</ClChip>
+                  {inDisp && <ClChip icon="logIn" tone="success">In {inDisp}</ClChip>}
+                  {outDisp && <ClChip icon="logOut" tone="danger">Out {outDisp}</ClChip>}
+                  {e.duration && <ClChip icon="clock" tone="neutral">{e.duration}</ClChip>}
                 </div>
-                {(inDisp || outDisp) && (
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 4, flexWrap: 'wrap' }}>
-                    {inDisp && <span style={{ fontSize: 12, fontWeight: 600 }}><span style={{ color: '#4ade80' }}>🟢 In:</span> {inDisp}</span>}
-                    {outDisp && <span style={{ fontSize: 12, fontWeight: 600 }}><span style={{ color: '#f87171' }}>🔴 Out:</span> {outDisp}</span>}
-                    {e.duration && <span className="badge badge-gold" style={{ fontSize: 10 }}>⏱ {e.duration}</span>}
-                  </div>
-                )}
-                {e.note && <div style={{ fontSize: 12, color: 'var(--offwhite)', lineHeight: 1.5, marginBottom: 3 }}>{e.note}</div>}
-                <div style={{ fontSize: 10, color: 'var(--graydk)' }}>
-                  ✍️ {e.by} · {e.at ? new Date(e.at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                {e.note && <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.5, marginTop: 8, overflowWrap: 'anywhere' }}>{e.note}</div>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--gray)', marginTop: 8 }}>
+                  <FormIcon name="userRound" size={12} />
+                  <span style={{ overflowWrap: 'anywhere' }}>{e.by} · {e.at ? new Date(e.at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
                 </div>
               </div>
               {canEditEntry(e) && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
-                  <button className="btn btn-primary" style={{ fontSize: 10, padding: '5px 8px' }} onClick={() => openEdit(e)}>✏️ Edit</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                  <button type="button" className="cl-act" onClick={() => openEdit(e)} aria-label={`Edit class log for ${dateDisp}`} title="Edit"
+                    style={{ width: 36, height: 36, borderRadius: 10, border: '1px solid var(--border)', background: '#fff', color: '#1A336A', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+                    <FormIcon name="pencil" size={16} />
+                  </button>
                   {isAdmin && (
-                    <button className="btn" style={{ fontSize: 10, padding: '5px 8px', background: '#dc2626', color: '#fff' }} onClick={() => deleteEntry(e.id)}>🗑️ Delete</button>
+                    <button type="button" className="cl-act" onClick={() => deleteEntry(e.id)} aria-label={`Delete class log for ${dateDisp}`} title="Delete"
+                      style={{ width: 36, height: 36, borderRadius: 10, border: '1px solid #FECACA', background: '#FEF2F2', color: '#B91C1C', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+                      <FormIcon name="trash" size={16} />
+                    </button>
                   )}
                 </div>
               )}
